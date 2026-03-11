@@ -1,14 +1,11 @@
 [variables]
-    PHP_VERSION = '8.3'
-    
-[phases.setup]
-nixPkgs = ["php82", "php82Extensions.intl", "php82Extensions.mbstring", "php82Extensions.mysqlnd", "php82Extensions.curl", "composer"]
+    PHP_VERSION = '8.2'
 
-[phases.install]
-cmds = ["composer install --no-dev --optimize-autoloader"]
+[phases.setup]
+    nixPkgs = ['php82', 'php82Packages.composer', 'apache']
+
+[phases.build]
+    cmds = ['composer install --no-dev --optimize-autoloader']
 
 [start]
-cmd = "php spark serve --host 0.0.0.0 --port $PORT"
-
-
-
+    cmd = 'php spark serve --host 0.0.0.0 --port $PORT'

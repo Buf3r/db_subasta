@@ -4,8 +4,8 @@
     "description": "API de Subastas - Backend",
     "homepage": "https://codeigniter.com",
     "license": "MIT",
-    "require": {
-        "php": "~8.2.0 || ~8.3.0",
+   "require": {
+        "php": "8.2.*", 
         "codeigniter4/framework": "^4.5",
         "firebase/php-jwt": "^6.4"
     },
