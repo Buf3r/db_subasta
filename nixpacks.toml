@@ -2,7 +2,7 @@
     PHP_VERSION = '8.2'
 
 [phases.setup]
-    nixPkgs = ['php82', 'php82Packages.composer', 'apache']
+    nixPkgs = ['php82', 'php82Packages.composer', 'php82Packages.intl', 'apache']
 
 [phases.build]
     cmds = ['composer install --no-dev --optimize-autoloader']
