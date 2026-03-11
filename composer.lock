@@ -24,6 +24,8 @@
                 "ext-intl": "*",
                 "ext-mbstring": "*",
                 "laminas/laminas-escaper": "^2.18",
+                "codeigniter4/framework": "4.5.1",
+                "firebase/php-jwt": "6.10.0",
                 "php": "^8.2",
                 "psr/log": "^3.0"
             },
