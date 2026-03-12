@@ -8,9 +8,8 @@ RUN apt-get update && apt-get install -y \
     unzip \
     curl \
     && docker-php-ext-install intl mbstring mysqli pdo pdo_mysql \
-    && a2enmod rewrite \
-    && a2dismod mpm_event \
-    && a2enmod mpm_prefork
+    && a2dismod mpm_event mpm_worker \
+    && a2enmod mpm_prefork rewrite
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
