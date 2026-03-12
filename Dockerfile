@@ -4,6 +4,7 @@ FROM php:8.2-apache
 RUN apt-get update && apt-get install -y \
     libicu-dev \
     libzip-dev \
+    libonig-dev \
     zip \
     unzip \
     curl \
@@ -13,14 +14,12 @@ RUN apt-get update && apt-get install -y \
 # Instalar Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Copiar proyecto
 WORKDIR /var/www/html
 COPY . .
 
-# Instalar dependencias
 RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
 
-# Configurar Apache para apuntar a /public
+# Apuntar Apache a /public
 RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
 
 # Permisos
