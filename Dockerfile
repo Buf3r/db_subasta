@@ -20,4 +20,7 @@ RUN printf 'CI_ENVIRONMENT = production\napp.baseURL = https://dbsubasta-product
 
 RUN chown -R www-data:www-data /var/www/html/writable
 
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
 EXPOSE 80
