@@ -9,7 +9,6 @@ use App\Models\ItemModel;
 use App\Models\UserModel;
 use CodeIgniter\RESTful\ResourceController;
 use CodeIgniter\API\ResponseTrait;
-use Config\Services;
 
 class Auction extends ResourceController
 {
@@ -22,8 +21,6 @@ class Auction extends ResourceController
         $session = \Config\Services::session();
         $this->userId = $session->getFlashdata('user_id');
     }
-
-    // Basic CRUD operation
 
     public function index()
     {
@@ -43,14 +40,12 @@ class Auction extends ResourceController
 
             if ($imageArray) {
                 foreach ($imageArray as $key2 => $value2) {
-                    $auctions[$key1]['images'][$key2]['image'] = Services::fullImageURL($value2['image']);
+                    $auctions[$key1]['images'][$key2]['image'] = $value2['image'];
                 }
             }
 
             $auctions[$key1]['bid_count'] = count($bidDb->getBid(where: ['auction_id' => $auctions[$key1]['auction_id']]));
-
             $auctions[$key1]['author'] = $userDb->getUser(id: $value1['user_id'] ?? -69);
-
             $auctions[$key1]['winner'] = $userDb->getUser(id: $value1['winner_user_id'] ?? -69);
         }
 
@@ -71,18 +66,15 @@ class Auction extends ResourceController
         }
 
         $userDb = new UserModel;
-
         $auction['author'] = $userDb->getUser(id: $auction['user_id'] ?? -69);
-
         $auction['winner'] = $userDb->getUser(id: $auction['winner_user_id'] ?? -69);
 
         $imageDb = new ImageModel;
-
         $imageArray = $imageDb->where(['item_id' => $auction['item_id']])->findAll();
 
         if ($imageArray) {
             foreach ($imageArray as $key2 => $value2) {
-                $auction['images'][$key2]['image'] = Services::fullImageURL($value2['image']);
+                $auction['images'][$key2]['image'] = $value2['image'];
             }
         }
 
@@ -96,7 +88,7 @@ class Auction extends ResourceController
     public function create()
     {
         if (!$this->validate([
-            'item_id'       => 'required|numeric',
+            'item_id'        => 'required|numeric',
             'date_completed' => 'permit_empty|valid_date',
         ])) {
             return $this->failValidationErrors(\Config\Services::validation()->getErrors());
@@ -113,14 +105,14 @@ class Auction extends ResourceController
         }
 
         $insert = [
-            'item_id'       => $this->request->getVar('item_id'),
-            'user_id'       => $this->userId,
-            'status'        => 'open',
+            'item_id'        => $this->request->getVar('item_id'),
+            'user_id'        => $this->userId,
+            'status'         => 'open',
             'date_completed' => $this->request->getVar('date_completed'),
         ];
 
         $db = new AuctionModel;
-        $save  = $db->insert($insert);
+        $save = $db->insert($insert);
 
         if (!$save) {
             return $this->failServerError(description: 'Failed to create auction');
@@ -136,16 +128,13 @@ class Auction extends ResourceController
     public function update($id = null)
     {
         if (!$this->validate([
-            'status'       => 'permit_empty|alpha_numeric',
+            'status' => 'permit_empty|alpha_numeric',
         ])) {
             return $this->failValidationErrors(\Config\Services::validation()->getErrors());
         }
 
         $db = new AuctionModel;
-        $exist = $db->getAuction(
-            $id,
-            where: ['items.user_id' => $this->userId]
-        );
+        $exist = $db->getAuction($id, where: ['items.user_id' => $this->userId]);
 
         if (!$exist) {
             return $this->failNotFound(description: 'Auction not found');
@@ -164,9 +153,7 @@ class Auction extends ResourceController
 
         return $this->respondUpdated([
             'status' => 200,
-            'messages' => [
-                'success' => 'Auction updated successfully'
-            ]
+            'messages' => ['success' => 'Auction updated successfully'],
         ]);
     }
 
@@ -184,12 +171,10 @@ class Auction extends ResourceController
 
         return $this->respondDeleted([
             'status' => 200,
-            'messages' => ['success' => 'Auction successfully deleted']
+            'messages' => ['success' => 'Auction successfully deleted'],
         ]);
     }
 
-    // Additional operation
-    /** Get user auction */
     public function myAuctions()
     {
         $db = new AuctionModel;
@@ -211,14 +196,12 @@ class Auction extends ResourceController
 
             if ($imageArray) {
                 foreach ($imageArray as $key2 => $value2) {
-                    $auctions[$key1]['images'][$key2]['image'] = Services::fullImageURL($value2['image']);
+                    $auctions[$key1]['images'][$key2]['image'] = $value2['image'];
                 }
             }
 
             $auctions[$key1]['bid_count'] = count($bidDb->getBid(where: ['auction_id' => $auctions[$key1]['auction_id']]));
-
             $auctions[$key1]['author'] = $userDb->getUser(id: $value1['user_id'] ?? -69);
-
             $auctions[$key1]['winner'] = $userDb->getUser(id: $value1['winner_user_id'] ?? -69);
         }
 
@@ -229,7 +212,6 @@ class Auction extends ResourceController
         ]);
     }
 
-    /** Get user bid  */
     public function myBids()
     {
         $db = new AuctionModel;
@@ -252,19 +234,16 @@ class Auction extends ResourceController
 
             $newData[$key1]['auction'] = $value1;
 
-
             $imageArray = $imageDb->where(['item_id' => $value1['item_id']])->findAll();
 
             if ($imageArray) {
                 foreach ($imageArray as $key2 => $value2) {
-                    $newData[$key1]['auction']['images'][$key2]['image'] = Services::fullImageURL($value2['image']);
+                    $newData[$key1]['auction']['images'][$key2]['image'] = $value2['image'];
                 }
             }
 
             $newData[$key1]['auction']['author'] = $userDb->getUser(id: $value1['user_id'] ?? -69);
-
             $newData[$key1]['auction']['winner'] = $userDb->getUser(id: $value1['winner_user_id'] ?? -69);
-
             $newData[$key1]['bids'] = $_bids;
         }
 
@@ -275,7 +254,6 @@ class Auction extends ResourceController
         ]);
     }
 
-    /** Get single user auction */
     public function showMyAuction($id = null)
     {
         $db = new AuctionModel;
@@ -290,12 +268,11 @@ class Auction extends ResourceController
         }
 
         $imageDb = new ImageModel;
-
         $imageArray = $imageDb->where(['item_id' => $auction['item_id']])->findAll();
 
         if ($imageArray) {
             foreach ($imageArray as $key2 => $value2) {
-                $auction['images'][$key2]['image'] = Services::fullImageURL($value2['image']);
+                $auction['images'][$key2]['image'] = $value2['image'];
             }
         }
 
@@ -309,7 +286,7 @@ class Auction extends ResourceController
     public function setWinner($id)
     {
         if (!$this->validate([
-            'bid_id'   => 'required|numeric',
+            'bid_id' => 'required|numeric',
         ])) {
             return $this->failValidationErrors(\Config\Services::validation()->getErrors());
         }
@@ -317,7 +294,6 @@ class Auction extends ResourceController
         $bidId = $this->request->getRawInputVar('bid_id');
 
         $bidDb = new BidModel;
-
         $bid = $bidDb->where(['bid_id' => $bidId])->first();
 
         if (!$bid) {
@@ -325,10 +301,9 @@ class Auction extends ResourceController
         }
 
         $db = new AuctionModel;
-
         $verifyAuction = $db->where([
             'auction_id' => $id,
-            'user_id' => $this->userId
+            'user_id'    => $this->userId
         ])->first();
 
         if (!$verifyAuction) {
@@ -337,7 +312,7 @@ class Auction extends ResourceController
 
         $update = [
             'winner_user_id' => $bid['user_id'],
-            'final_price'    => $bid['bid_price']
+            'final_price'    => $bid['bid_price'],
         ];
 
         $save = $db->update($id, $update);
@@ -348,28 +323,23 @@ class Auction extends ResourceController
 
         return $this->respondUpdated([
             'status' => 200,
-            'messages' => [
-                'success' => 'Auction winner successfully added'
-            ]
+            'messages' => ['success' => 'Auction winner successfully added'],
         ]);
     }
 
     public function close($id)
     {
         $db = new AuctionModel;
-
         $verifyAuction = $db->where([
             'auction_id' => $id,
-            'user_id' => $this->userId
+            'user_id'    => $this->userId
         ])->first();
 
         if (!$verifyAuction) {
             return $this->failForbidden('Access Forbidden');
         }
 
-        $update = [
-            'status' => 'closed',
-        ];
+        $update = ['status' => 'closed'];
 
         $save = $db->update($id, $update);
 
@@ -379,9 +349,7 @@ class Auction extends ResourceController
 
         return $this->respondUpdated([
             'status' => 200,
-            'messages' => [
-                'success' => 'Auction status successfully changed'
-            ]
+            'messages' => ['success' => 'Auction status successfully changed'],
         ]);
     }
 }
