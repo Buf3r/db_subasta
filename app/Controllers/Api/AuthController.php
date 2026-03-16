@@ -36,6 +36,7 @@ class AuthController extends BaseController
         }
 
         $jwt = new JWTCI4;
+        try {
         $token = $jwt->token(
             userId: $user['user_id'],
             username: $user['username'],
@@ -43,6 +44,9 @@ class AuthController extends BaseController
             email: $user['email'],
             phone: $user['phone']
         );
+    } catch (\Exception $e) {
+        return $this->failServerError($e->getMessage());
+    }
 
         return $this->respond(['status' => 200, 'token' => $token]);
     }
