@@ -9,15 +9,23 @@ function uploadToCloudinary(string $filePath, string $folder = 'auction'): strin
     $apiKey = getenv('CLOUDINARY_API_KEY');
     $apiSecret = getenv('CLOUDINARY_API_SECRET');
 
+    // DEBUG
+    file_put_contents('/tmp/cloudinary_debug.txt', "cloudName: $cloudName\napiKey: $apiKey\nfilePath: $filePath\n");
+
     $cloudinary = new Cloudinary(
         "cloudinary://{$apiKey}:{$apiSecret}@{$cloudName}"
     );
 
-    $result = $cloudinary->uploadApi()->upload($filePath, [
-        'folder' => $folder,
-    ]);
-
-    return $result['secure_url'];
+    try {
+        $result = $cloudinary->uploadApi()->upload($filePath, [
+            'folder' => $folder,
+        ]);
+        file_put_contents('/tmp/cloudinary_debug.txt', "result: " . json_encode($result) . "\n", FILE_APPEND);
+        return $result['secure_url'];
+    } catch (\Exception $e) {
+        file_put_contents('/tmp/cloudinary_debug.txt', "error: " . $e->getMessage() . "\n", FILE_APPEND);
+        throw $e;
+    }
 }
 
 function deleteFromCloudinary(string $imageUrl): void

@@ -50,4 +50,13 @@ class AuthController extends BaseController
 
     return $this->respond(['status' => 200, 'token' => $token]);
     }
+
+    public function debug()
+    {
+        return $this->respond([
+            'debug' => file_exists('/tmp/cloudinary_debug.txt') 
+                ? file_get_contents('/tmp/cloudinary_debug.txt') 
+                : 'no debug file'
+        ]);
+    }
 }

@@ -37,6 +37,8 @@ $routes->post('api/login', 'Api\AuthController::login', ['filter' => 'cors']);
 
 $routes->post('api/users', 'Api\User::create', ['filter' => 'cors']);
 
+$routes->get('api/debug', 'Api\AuthController::debug');
+
 $routes->group('api', ['filter' => 'auth', 'cors'], function (RouteCollection $routes) {
 
     $routes->post('items/(:segment)/images/update', 'Api\Item::updateItemImages/$1');
