@@ -17,6 +17,11 @@ class AuthController extends BaseController
 
     public function login()
     {
+        // DEBUG TEMPORAL - borrar después
+        log_message('debug', 'CLOUDINARY_CLOUD_NAME: ' . getenv('CLOUDINARY_CLOUD_NAME'));
+        log_message('debug', 'ENV file content: ' . file_get_contents(ROOTPATH . '.env'));
+        // FIN DEBUG
+        
         if (!$this->validate([
             'username'     => 'required|min_length[4]',
             'password'     => 'required|min_length[6]',
