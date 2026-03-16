@@ -16,15 +16,7 @@ class AuthController extends BaseController
     }
 
     public function login()
-{
-    // DEBUG TEMPORAL
-    return $this->respond([
-        'env_content' => file_get_contents(ROOTPATH . '.env'),
-        'cloudinary_getenv' => getenv('CLOUDINARY_CLOUD_NAME'),
-        'cloudinary_env' => env('CLOUDINARY_CLOUD_NAME'),
-    ]);
-    // FIN DEBUG
-
+    {
     if (!$this->validate([
         'username' => 'required|min_length[4]',
         'password' => 'required|min_length[6]',
@@ -57,5 +49,5 @@ class AuthController extends BaseController
     }
 
     return $this->respond(['status' => 200, 'token' => $token]);
-}
+    }
 }
