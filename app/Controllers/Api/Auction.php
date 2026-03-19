@@ -67,38 +67,40 @@ class Auction extends ResourceController
     }
 
     public function show($id = null)
-    {
-        $db = new AuctionModel;
-        $auction = $db->getAuction($id, allStatus: true);
+{
+    $db = new AuctionModel;
+    $auction = $db->getAuction($id, allStatus: true);
 
-        if (!$auction) {
-            return $this->failNotFound('Auction not found');
-        }
-
-        $userDb = new UserModel;
-        $auction['author'] = $userDb->getUser(id: $auction['user_id'] ?? -69);
-        $auction['winner'] = $userDb->getUser(id: $auction['winner_user_id'] ?? -69);
-
-        $imageDb = new ImageModel;
-        $imageArray = $imageDb->where(['item_id' => $auction['item_id']])->findAll();
-
-        if ($imageArray) {
-            foreach ($imageArray as $key2 => $value2) {
-                $auction['images'][$key2]['image'] = $value2['image'];
-                // Obtener la oferta más alta
-                $highestBid = $bidDb->select('MAX(bid_price) as highest_bid')
-                    ->where('auction_id', $value1['auction_id'])
-                    ->first();
-                $auctions[$key1]['highest_bid'] = $highestBid['highest_bid'] ?? $value1['initial_price'];
-            }
-        }
-
-        return $this->respond([
-            'status' => 200,
-            'messages' => ['success' => 'OK'],
-            'data' => $auction,
-        ]);
+    if (!$auction) {
+        return $this->failNotFound('Auction not found');
     }
+
+    $userDb = new UserModel;
+    $auction['author'] = $auction['user_id'] ? $userDb->getUser($auction['user_id']) : null;
+    $auction['winner'] = $auction['winner_user_id'] ? $userDb->getUser($auction['winner_user_id']) : null;
+
+    $imageDb = new ImageModel;
+    $imageArray = $imageDb->where(['item_id' => $auction['item_id']])->findAll();
+
+    if ($imageArray) {
+        foreach ($imageArray as $key2 => $value2) {
+            $auction['images'][$key2]['image'] = $value2['image'];
+        }
+    }
+
+    // Obtener la oferta más alta
+    $bidDb = new BidModel;
+    $highestBid = $bidDb->select('MAX(bid_price) as highest_bid')
+        ->where('auction_id', $auction['auction_id'])
+        ->first();
+    $auction['highest_bid'] = $highestBid['highest_bid'] ?? $auction['initial_price'];
+
+    return $this->respond([
+        'status' => 200,
+        'messages' => ['success' => 'OK'],
+        'data' => $auction,
+    ]);
+}
 
     public function create()
     {
