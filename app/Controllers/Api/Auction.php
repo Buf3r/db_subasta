@@ -24,36 +24,40 @@ class Auction extends ResourceController
 
     public function index()
     {
-        $db = new AuctionModel;
-        $auctions = $db->getAuction(page: intval($this->request->getGet('page')));
+        try {
+            $db = new AuctionModel;
+            $auctions = $db->getAuction(page: intval($this->request->getGet('page')));
 
-        if (!$auctions) {
-            return $this->failNotFound('Auctions not found');
-        }
-
-        $imageDb = new ImageModel;
-        $bidDb = new BidModel;
-        $userDb = new UserModel;
-
-        foreach ($auctions as $key1 => $value1) {
-            $imageArray = $imageDb->where(['item_id' => $value1['item_id']])->findAll();
-
-            if ($imageArray) {
-                foreach ($imageArray as $key2 => $value2) {
-                    $auctions[$key1]['images'][$key2]['image'] = $value2['image'];
-                }
+            if (!$auctions) {
+                return $this->failNotFound('Auctions not found');
             }
 
-            $auctions[$key1]['bid_count'] = count($bidDb->getBid(where: ['auction_id' => $auctions[$key1]['auction_id']]));
-            $auctions[$key1]['author'] = $userDb->getUser(id: $value1['user_id'] ?? -69);
-            $auctions[$key1]['winner'] = $userDb->getUser(id: $value1['winner_user_id'] ?? -69);
-        }
+            $imageDb = new ImageModel;
+            $bidDb = new BidModel;
+            $userDb = new UserModel;
 
-        return $this->respond([
-            'status' => 200,
-            'messages' => ['success' => 'OK'],
-            'data' => $auctions,
-        ]);
+            foreach ($auctions as $key1 => $value1) {
+                $imageArray = $imageDb->where(['item_id' => $value1['item_id']])->findAll();
+
+                if ($imageArray) {
+                    foreach ($imageArray as $key2 => $value2) {
+                        $auctions[$key1]['images'][$key2]['image'] = $value2['image'];
+                    }
+                }
+
+                $auctions[$key1]['bid_count'] = count($bidDb->getBid(where: ['auction_id' => $auctions[$key1]['auction_id']]));
+                $auctions[$key1]['author'] = $userDb->getUser($value1['user_id'] ?? null);
+                $auctions[$key1]['winner'] = $userDb->getUser($value1['winner_user_id'] ?? null);
+            }
+
+            return $this->respond([
+                'status' => 200,
+                'messages' => ['success' => 'OK'],
+                'data' => $auctions,
+            ]);
+        } catch (\Throwable $e) {
+            return $this->failServerError($e->getMessage() . ' in ' . $e->getFile() . ' line ' . $e->getLine());
+        }
     }
 
     public function show($id = null)
