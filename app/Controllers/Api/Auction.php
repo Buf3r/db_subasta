@@ -45,8 +45,8 @@ class Auction extends ResourceController
             }
 
             $auctions[$key1]['bid_count'] = count($bidDb->getBid(where: ['auction_id' => $auctions[$key1]['auction_id']]));
-            $auctions[$key1]['author'] = $userDb->getUser($value1['user_id'] ?? null);
-            $auctions[$key1]['winner'] = $userDb->getUser(id: $value1['winner_user_id'] ?? null);
+            $auctions[$key1]['author'] = $userDb->getUser(id: $value1['user_id'] ?? -69);
+            $auctions[$key1]['winner'] = $userDb->getUser(id: $value1['winner_user_id'] ?? -69);
         }
 
         return $this->respond([
@@ -66,8 +66,8 @@ class Auction extends ResourceController
         }
 
         $userDb = new UserModel;
-        $auction['author'] = $userDb->getUser(id: $auction['user_id'] ?? null);
-        $auction['winner'] = $userDb->getUser(id: $auction['winner_user_id'] ?? null);
+        $auction['author'] = $userDb->getUser(id: $auction['user_id'] ?? -69);
+        $auction['winner'] = $userDb->getUser(id: $auction['winner_user_id'] ?? -69);
 
         $imageDb = new ImageModel;
         $imageArray = $imageDb->where(['item_id' => $auction['item_id']])->findAll();
