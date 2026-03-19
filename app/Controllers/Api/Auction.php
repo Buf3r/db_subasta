@@ -46,8 +46,8 @@ class Auction extends ResourceController
                 }
 
                 $auctions[$key1]['bid_count'] = count($bidDb->getBid(where: ['auction_id' => $auctions[$key1]['auction_id']]));
-                $auctions[$key1]['author'] = $userDb->getUser($value1['user_id'] ?? null);
-                $auctions[$key1]['winner'] = $userDb->getUser($value1['winner_user_id'] ?? null);
+                $auctions[$key1]['author'] = $value1['user_id'] ? $userDb->getUser($value1['user_id']) : null;
+                $auctions[$key1]['winner'] = $value1['winner_user_id'] ? $userDb->getUser($value1['winner_user_id']) : null;
             }
 
             return $this->respond([
@@ -205,8 +205,8 @@ class Auction extends ResourceController
             }
 
             $auctions[$key1]['bid_count'] = count($bidDb->getBid(where: ['auction_id' => $auctions[$key1]['auction_id']]));
-            $auctions[$key1]['author'] = $userDb->getUser(id: $value1['user_id'] ?? -69);
-            $auctions[$key1]['winner'] = $userDb->getUser(id: $value1['winner_user_id'] ?? -69);
+            $auctions[$key1]['author'] = $value1['user_id'] ? $userDb->getUser($value1['user_id']) : null;
+            $auctions[$key1]['winner'] = $value1['winner_user_id'] ? $userDb->getUser($value1['winner_user_id']) : null;
         }
 
         return $this->respond([
@@ -246,8 +246,8 @@ class Auction extends ResourceController
                 }
             }
 
-            $newData[$key1]['auction']['author'] = $userDb->getUser(id: $value1['user_id'] ?? -69);
-            $newData[$key1]['auction']['winner'] = $userDb->getUser(id: $value1['winner_user_id'] ?? -69);
+            $auctions[$key1]['author'] = $value1['user_id'] ? $userDb->getUser($value1['user_id']) : null;
+            $auctions[$key1]['winner'] = $value1['winner_user_id'] ? $userDb->getUser($value1['winner_user_id']) : null;
             $newData[$key1]['bids'] = $_bids;
         }
 
