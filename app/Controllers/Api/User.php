@@ -84,6 +84,7 @@ class User extends ResourceController
             'name'          => $this->request->getVar('name'),
             'email'         => $this->request->getVar('email'),
             'phone'         => $this->request->getVar('phone'),
+            'city'          => $this->request->getVar('city'),
             'profile_image' => $fileName,
         ];
 
@@ -119,10 +120,11 @@ class User extends ResourceController
         }
 
         $update = [
-            'name'  => $this->request->getRawInputVar('name') ?? $exist['name'],
-            'email' => $this->request->getRawInputVar('email') ?? $exist['email'],
-            'phone' => $this->request->getRawInputVar('phone') ?? $exist['phone'],
-        ];
+                'name'  => $this->request->getRawInputVar('name') ?? $exist['name'],
+                'email' => $this->request->getRawInputVar('email') ?? $exist['email'],
+                'phone' => $this->request->getRawInputVar('phone') ?? $exist['phone'],
+                'city'  => $this->request->getRawInputVar('city') ?? $exist['city'],
+            ];
 
         $save = $db->update($this->userId, $update);
 

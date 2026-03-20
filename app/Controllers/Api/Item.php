@@ -7,7 +7,6 @@ use App\Models\AuctionModel;
 use App\Models\ImageModel;
 use App\Models\ItemModel;
 use CodeIgniter\API\ResponseTrait;
-use Config\Services;
 
 class Item extends BaseController
 {
@@ -77,6 +76,8 @@ class Item extends BaseController
         if (!$this->validate([
             'item_name'     => 'required',
             'initial_price' => 'required|numeric',
+            'location'      => 'permit_empty',
+            'condition'     => 'permit_empty|in_list[new,used,refurbished]',
             'images'        => 'permit_empty|mime_in[images,image/png,image/jpeg]|is_image[images]|max_size[images,5120]',
         ])) {
             return $this->failValidationErrors(\Config\Services::validation()->getErrors());
@@ -86,6 +87,8 @@ class Item extends BaseController
             'user_id'       => $this->userId,
             'item_name'     => $this->request->getVar('item_name'),
             'description'   => $this->request->getVar('description'),
+            'location'      => $this->request->getVar('location'),
+            'condition'     => $this->request->getVar('condition'),
             'initial_price' => $this->request->getVar('initial_price'),
         ];
 
@@ -97,9 +100,9 @@ class Item extends BaseController
         }
 
         if ($imagefile = $this->request->getFiles()) {
-        $imageDb = new ImageModel;
+            $imageDb = new ImageModel;
 
-        foreach ($imagefile['images'] as $img) {
+            foreach ($imagefile['images'] as $img) {
                 if ($img->isValid() && !$img->hasMoved()) {
                     $tempPath = $img->getTempName();
                     try {
@@ -127,6 +130,8 @@ class Item extends BaseController
         if (!$this->validate([
             'item_name'     => 'permit_empty',
             'description'   => 'permit_empty',
+            'location'      => 'permit_empty',
+            'condition'     => 'permit_empty|in_list[new,used,refurbished]',
             'initial_price' => 'permit_empty|numeric',
         ])) {
             return $this->failValidationErrors(\Config\Services::validation()->getErrors());
@@ -142,6 +147,8 @@ class Item extends BaseController
         $update = [
             'item_name'     => $this->request->getRawInputVar('item_name') ?? $exist['item_name'],
             'description'   => $this->request->getRawInputVar('description') ?? $exist['description'],
+            'location'      => $this->request->getRawInputVar('location') ?? $exist['location'],
+            'condition'     => $this->request->getRawInputVar('condition') ?? $exist['condition'],
             'initial_price' => $this->request->getRawInputVar('initial_price') ?? $exist['initial_price'],
         ];
 
@@ -153,7 +160,7 @@ class Item extends BaseController
 
         return $this->respondUpdated([
             'status' => 200,
-            'messages' => ['success' => 'Item updated successfully']
+            'messages' => ['success' => 'Item updated successfully'],
         ]);
     }
 
@@ -161,7 +168,7 @@ class Item extends BaseController
     {
         if (!$this->validate([
             'former_images_id' => 'permit_empty',
-            'images' => 'permit_empty|mime_in[images,image/png,image/jpeg]|is_image[images]|max_size[images,5120]',
+            'images'           => 'permit_empty|mime_in[images,image/png,image/jpeg]|is_image[images]|max_size[images,5120]',
         ])) {
             return $this->failValidationErrors(\Config\Services::validation()->getErrors());
         }
@@ -207,7 +214,7 @@ class Item extends BaseController
             'status' => 200,
             'messages' => ['success' => 'Item images updated successfully'],
             'removed' => $removedCount,
-            'added' => $addedCount
+            'added'   => $addedCount,
         ]);
     }
 
@@ -232,7 +239,7 @@ class Item extends BaseController
 
         return $this->respondDeleted([
             'status' => 200,
-            'messages' => ['success' => 'Item successfully deleted']
+            'messages' => ['success' => 'Item successfully deleted'],
         ]);
     }
 }
