@@ -79,6 +79,7 @@ class Item extends BaseController
             'location'      => 'permit_empty',
             'condition'     => 'permit_empty|in_list[new,used,refurbished]',
             'images'        => 'permit_empty|mime_in[images,image/png,image/jpeg]|is_image[images]|max_size[images,5120]',
+            'category'      => 'permit_empty|in_list[tecnologia,vehiculos,hogar,ropa_accesorios,alimentos,herramientas,arte_coleccion,deportes,otros]',
         ])) {
             return $this->failValidationErrors(\Config\Services::validation()->getErrors());
         }
@@ -90,6 +91,7 @@ class Item extends BaseController
             'location'      => $this->request->getVar('location'),
             'condition'     => $this->request->getVar('condition'),
             'initial_price' => $this->request->getVar('initial_price'),
+            'category'      => $this->request->getVar('category'),
         ];
 
         $db = new ItemModel;
@@ -133,6 +135,7 @@ class Item extends BaseController
             'location'      => 'permit_empty',
             'condition'     => 'permit_empty|in_list[new,used,refurbished]',
             'initial_price' => 'permit_empty|numeric',
+            'category'      => 'permit_empty|in_list[tecnologia,vehiculos,hogar,ropa_accesorios,alimentos,herramientas,arte_coleccion,deportes,otros]',
         ])) {
             return $this->failValidationErrors(\Config\Services::validation()->getErrors());
         }
@@ -150,6 +153,7 @@ class Item extends BaseController
             'location'      => $this->request->getRawInputVar('location') ?? $exist['location'],
             'condition'     => $this->request->getRawInputVar('condition') ?? $exist['condition'],
             'initial_price' => $this->request->getRawInputVar('initial_price') ?? $exist['initial_price'],
+            'category'      => $this->request->getRawInputVar('category') ?? $exist['category'],
         ];
 
         $save = $db->update($id, $update);

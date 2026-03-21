@@ -16,10 +16,11 @@ class ItemModel extends Model
     protected $protectFields    = true;
     protected $allowedFields = [
     'user_id',
-    'item_name', 
+    'item_name',
     'description',
     'location',
     'condition',
+    'category',
     'initial_price'
 ];
 
