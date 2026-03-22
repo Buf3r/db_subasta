@@ -11,7 +11,8 @@ class CronController extends ResourceController
     use ResponseTrait;
 
     public function closeExpired()
-    {
+{
+    try {
         $db = new AuctionModel;
         $now = date('Y-m-d H:i:s');
 
@@ -39,5 +40,8 @@ class CronController extends ResourceController
             'messages' => ['success' => "Closed $count auctions"],
             'closed' => $count,
         ]);
+    } catch (\Throwable $e) {
+        return $this->failServerError($e->getMessage() . ' in ' . $e->getFile() . ' line ' . $e->getLine());
     }
+}
 }
