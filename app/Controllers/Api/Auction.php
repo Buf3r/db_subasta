@@ -354,6 +354,23 @@ class Auction extends ResourceController
 
         $save = $db->update($id, $update);
 
+        // Notificar al ganador
+            try {
+                $userDb = new UserModel;
+                $winner = $userDb->find($bid['user_id']);
+                if ($winner && $winner['fcm_token']) {
+                    $fcm = new \App\Libraries\FCMNotification();
+                    $fcm->sendNotification(
+                        fcmToken: $winner['fcm_token'],
+                        title: '🏆 ¡Ganaste la subasta!',
+                        body: "Felicitaciones, ganaste la subasta. El vendedor se pondrá en contacto contigo.",
+                        data: ['auction_id' => $id, 'type' => 'winner']
+                    );
+                }
+            } catch (\Exception $e) {
+                log_message('error', 'Winner notification error: ' . $e->getMessage());
+            }
+
         if (!$save) {
             return $this->failServerError(description: 'Failed to set auction winner');
         }

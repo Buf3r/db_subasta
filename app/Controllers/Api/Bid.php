@@ -106,8 +106,8 @@ class Bid extends ResourceController
     public function create()
     {
         if (!$this->validate([
-            'auction_id'  => 'required|numeric',
-            'bid_price'   => 'required|numeric',
+            'auction_id' => 'required|numeric',
+            'bid_price'  => 'required|numeric',
         ])) {
             return $this->failValidationErrors(\Config\Services::validation()->getErrors());
         }
@@ -120,22 +120,74 @@ class Bid extends ResourceController
         }
 
         $insert = [
-            'user_id'       => $this->userId,
-            'auction_id'     => $this->request->getVar('auction_id'),
-            'bid_price'   => $this->request->getVar('bid_price'),
+            'user_id'    => $this->userId,
+            'auction_id' => $this->request->getVar('auction_id'),
+            'bid_price'  => $this->request->getVar('bid_price'),
         ];
 
         $db = new BidModel;
-        $save  = $db->insert($insert);
+        $save = $db->insert($insert);
 
         if (!$save) {
             return $this->failServerError(description: 'Failed to place bid');
         }
 
+        // Enviar notificaciones
+        $this->_sendBidNotifications(
+            auctionId: $this->request->getVar('auction_id'),
+            bidPrice: $this->request->getVar('bid_price'),
+            bidderUserId: $this->userId,
+            auction: $checkAuction
+        );
+
         return $this->respondCreated([
             'status' => 201,
-            'messages' => ['success' => 'OK']
+            'messages' => ['success' => 'OK'],
         ]);
+    }
+
+    private function _sendBidNotifications(string $auctionId, string $bidPrice, string $bidderUserId, array $auction): void
+    {
+        try {
+            $userDb = new UserModel;
+            $fcm = new \App\Libraries\FCMNotification();
+            $bidDb = new BidModel;
+
+            // 1. Notificar al dueño de la subasta
+            $auctionOwner = $userDb->find($auction['user_id']);
+            if (
+                $auctionOwner &&
+                $auctionOwner['fcm_token'] &&
+                $auctionOwner['user_id'] != $bidderUserId
+            ) {
+                $fcm->sendNotification(
+                    fcmToken: $auctionOwner['fcm_token'],
+                    title: '💰 Nueva oferta en tu subasta',
+                    body: "Alguien ofreció \${$bidPrice} por \"{$auction['item_name']}\"",
+                    data: ['auction_id' => $auctionId, 'type' => 'new_bid']
+                );
+            }
+
+            // 2. Notificar al anterior postor más alto que fue superado
+            $previousBids = $bidDb->where('auction_id', $auctionId)
+                ->where('user_id !=', $bidderUserId)
+                ->orderBy('bid_price', 'DESC')
+                ->first();
+
+            if ($previousBids) {
+                $previousBidder = $userDb->find($previousBids['user_id']);
+                if ($previousBidder && $previousBidder['fcm_token']) {
+                    $fcm->sendNotification(
+                        fcmToken: $previousBidder['fcm_token'],
+                        title: '⚡ ¡Te superaron!',
+                        body: "Alguien ofreció \${$bidPrice} por \"{$auction['item_name']}\"",
+                        data: ['auction_id' => $auctionId, 'type' => 'outbid']
+                    );
+                }
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Notification error: ' . $e->getMessage());
+        }
     }
 
     public function update($id = null)
