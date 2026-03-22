@@ -9,8 +9,14 @@ class FCMNotification
 
     public function __construct()
     {
-        $credentialsJson = getenv('FCM_CREDENTIALS');
+        $credentialsJson = env('FCM_CREDENTIALS');
+        if (!$credentialsJson) {
+            throw new \Exception('FCM_CREDENTIALS not found in environment');
+        }
         $this->credentials = json_decode($credentialsJson, true);
+        if (!$this->credentials) {
+            throw new \Exception('FCM_CREDENTIALS is not valid JSON: ' . json_last_error_msg());
+        }
     }
 
     private function getAccessToken(): string
