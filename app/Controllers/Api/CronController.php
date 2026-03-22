@@ -44,4 +44,33 @@ class CronController extends ResourceController
         return $this->failServerError($e->getMessage() . ' in ' . $e->getFile() . ' line ' . $e->getLine());
     }
 }
+    public function testNotification()
+    {
+        try {
+            $fcm = new \App\Libraries\FCMNotification();
+            
+            // Obtener el fcm_token del usuario actual para probar
+            $userDb = new \App\Models\UserModel;
+            $users = $userDb->where('fcm_token IS NOT NULL', null, false)->first();
+            
+            if (!$users || !$users['fcm_token']) {
+                return $this->respond(['error' => 'No users with FCM token found']);
+            }
+
+            $result = $fcm->sendNotification(
+                fcmToken: $users['fcm_token'],
+                title: '🔔 Prueba de notificación',
+                body: 'Si ves esto, las notificaciones funcionan!',
+                data: ['type' => 'test']
+            );
+
+            return $this->respond([
+                'status' => 200,
+                'sent' => $result,
+                'token_used' => substr($users['fcm_token'], 0, 20) . '...',
+            ]);
+        } catch (\Throwable $e) {
+            return $this->respond(['error' => $e->getMessage()]);
+        }
+    }
 }

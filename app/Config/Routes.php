@@ -38,6 +38,7 @@ $routes->post('api/login', 'Api\AuthController::login', ['filter' => 'cors']);
 $routes->post('api/users', 'Api\User::create', ['filter' => 'cors']);
 
 $routes->get('api/cron/close-expired', 'Api\CronController::closeExpired');
+$routes->get('api/cron/test-notification', 'Api\CronController::testNotification');
 //$routes->get('api/debug', 'Api\AuthController::debug');
 
 $routes->group('api', ['filter' => 'auth', 'cors'], function (RouteCollection $routes) {
