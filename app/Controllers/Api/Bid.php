@@ -132,13 +132,13 @@ class Bid extends ResourceController
             return $this->failServerError(description: 'Failed to place bid');
         }
 
-        // DEBUG temporal
-        $debugInfo = $this->_sendBidNotificationsDebug(
-            auctionId: $this->request->getVar('auction_id'),
-            bidPrice: $this->request->getVar('bid_price'),
-            bidderUserId: $this->userId,
-            auction: $checkAuction
-        );
+        // DEBUG temporal llegan mensajes de prueba con https://dbsubasta-production.up.railway.app/api/bids y con un auth y token
+        //$debugInfo = $this->_sendBidNotificationsDebug(
+          //  auctionId: $this->request->getVar('auction_id'),
+           // bidPrice: $this->request->getVar('bid_price'),
+           // bidderUserId: $this->userId,
+           // auction: $checkAuction
+       // );
 
         return $this->respondCreated([
             'status'   => 201,
@@ -195,7 +195,7 @@ class Bid extends ResourceController
         }
     }
 
-    private function _sendBidNotificationsDebug(string $auctionId, string $bidPrice, string $bidderUserId, array $auction): array
+    /*private function _sendBidNotificationsDebug(string $auctionId, string $bidPrice, string $bidderUserId, array $auction): array
     {
         $debug = [];
         
@@ -250,7 +250,8 @@ class Bid extends ResourceController
         }
 
         return $debug;
-    }
+    }*/
+
     public function update($id = null)
     {
         if (!$this->validate([
