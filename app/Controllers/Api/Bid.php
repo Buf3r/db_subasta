@@ -153,38 +153,42 @@ class Bid extends ResourceController
             $fcm = new \App\Libraries\FCMNotification();
             $bidDb = new BidModel;
 
+            log_message('info', "Sending bid notifications for auction $auctionId, bidder $bidderUserId");
+
             // 1. Notificar al dueño de la subasta
             $auctionOwner = $userDb->find($auction['user_id']);
+            
+            log_message('info', "Auction owner: " . json_encode([
+                'user_id' => $auctionOwner['user_id'] ?? 'null',
+                'has_token' => !empty($auctionOwner['fcm_token']),
+                'is_same_user' => $auctionOwner['user_id'] == $bidderUserId
+            ]));
+
             if (
                 $auctionOwner &&
                 $auctionOwner['fcm_token'] &&
                 $auctionOwner['user_id'] != $bidderUserId
             ) {
-                $fcm->sendNotification(
+                $result = $fcm->sendNotification(
                     fcmToken: $auctionOwner['fcm_token'],
                     title: '💰 Nueva oferta en tu subasta',
                     body: "Alguien ofreció \${$bidPrice} por \"{$auction['item_name']}\"",
                     data: ['auction_id' => $auctionId, 'type' => 'new_bid']
                 );
+                log_message('info', "Owner notification result: " . ($result ? 'sent' : 'failed'));
             }
 
-            // 2. Notificar al anterior postor más alto que fue superado
+            // 2. Notificar al anterior postor
             $previousBids = $bidDb->where('auction_id', $auctionId)
                 ->where('user_id !=', $bidderUserId)
                 ->orderBy('bid_price', 'DESC')
                 ->first();
 
-            if ($previousBids) {
-                $previousBidder = $userDb->find($previousBids['user_id']);
-                if ($previousBidder && $previousBidder['fcm_token']) {
-                    $fcm->sendNotification(
-                        fcmToken: $previousBidder['fcm_token'],
-                        title: '⚡ ¡Te superaron!',
-                        body: "Alguien ofreció \${$bidPrice} por \"{$auction['item_name']}\"",
-                        data: ['auction_id' => $auctionId, 'type' => 'outbid']
-                    );
-                }
-            }
+            log_message('info', "Previous bidder: " . json_encode([
+                'found' => $previousBids ? true : false,
+                'has_token' => $previousBids ? !empty($userDb->find($previousBids['user_id'])['fcm_token']) : false
+            ]));
+
         } catch (\Exception $e) {
             log_message('error', 'Notification error: ' . $e->getMessage());
         }
