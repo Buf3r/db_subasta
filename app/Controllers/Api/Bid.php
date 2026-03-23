@@ -132,8 +132,8 @@ class Bid extends ResourceController
             return $this->failServerError(description: 'Failed to place bid');
         }
 
-        // Enviar notificaciones
-        $this->_sendBidNotifications(
+        // DEBUG temporal
+        $debugInfo = $this->_sendBidNotificationsDebug(
             auctionId: $this->request->getVar('auction_id'),
             bidPrice: $this->request->getVar('bid_price'),
             bidderUserId: $this->userId,
@@ -141,8 +141,9 @@ class Bid extends ResourceController
         );
 
         return $this->respondCreated([
-            'status' => 201,
+            'status'   => 201,
             'messages' => ['success' => 'OK'],
+            'debug'    => $debugInfo, // ← temporal
         ]);
     }
 
@@ -194,6 +195,62 @@ class Bid extends ResourceController
         }
     }
 
+    private function _sendBidNotificationsDebug(string $auctionId, string $bidPrice, string $bidderUserId, array $auction): array
+    {
+        $debug = [];
+        
+        try {
+            $userDb = new UserModel;
+            $fcm = new \App\Libraries\FCMNotification();
+            $bidDb = new BidModel;
+
+            $auctionOwner = $userDb->find($auction['user_id']);
+            
+            $debug['auction_owner'] = [
+                'user_id'    => $auctionOwner['user_id'] ?? null,
+                'has_token'  => !empty($auctionOwner['fcm_token']),
+                'is_bidder'  => ($auctionOwner['user_id'] ?? null) == $bidderUserId,
+            ];
+
+            if ($auctionOwner && $auctionOwner['fcm_token'] && $auctionOwner['user_id'] != $bidderUserId) {
+                $result = $fcm->sendNotificationDebug(
+                    fcmToken: $auctionOwner['fcm_token'],
+                    title: '💰 Nueva oferta en tu subasta',
+                    body: "Alguien ofreció \${$bidPrice}",
+                );
+                $debug['owner_notification'] = $result;
+            } else {
+                $debug['owner_notification'] = 'skipped';
+            }
+
+            $previousBid = $bidDb->where('auction_id', $auctionId)
+                ->where('user_id !=', $bidderUserId)
+                ->orderBy('bid_price', 'DESC')
+                ->first();
+
+            $debug['previous_bidder'] = $previousBid ? [
+                'user_id'   => $previousBid['user_id'],
+                'has_token' => !empty($userDb->find($previousBid['user_id'])['fcm_token']),
+            ] : null;
+
+            if ($previousBid) {
+                $previousBidder = $userDb->find($previousBid['user_id']);
+                if ($previousBidder && $previousBidder['fcm_token']) {
+                    $result = $fcm->sendNotificationDebug(
+                        fcmToken: $previousBidder['fcm_token'],
+                        title: '⚡ ¡Te superaron!',
+                        body: "Alguien ofreció \${$bidPrice}",
+                    );
+                    $debug['previous_bidder_notification'] = $result;
+                }
+            }
+
+        } catch (\Exception $e) {
+            $debug['error'] = $e->getMessage();
+        }
+
+        return $debug;
+    }
     public function update($id = null)
     {
         if (!$this->validate([
