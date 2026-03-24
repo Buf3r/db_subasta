@@ -39,7 +39,7 @@ class Bid extends ResourceController
                 $bids[$key]['profile_image'] = Services::fullImageURL($value['profile_image']);
             }
 
-            $bids[$key]['bidder'] = $userDb->getUser(id: $value['user_id'] ?? -69);
+            $bids[$key]['bidder'] = $userDb->getUser($value['user_id'] ?? null);
 
             $bids[$key]['mine'] = $bids[$key]['user_id'] == $this->userId;
         }
@@ -60,7 +60,7 @@ class Bid extends ResourceController
             $userDb = new UserModel;
 
             foreach ($bids as $key => $value) {
-                $bids[$key]['bidder'] = $userDb->getUser(id: $value['user_id'] ?? -69);
+                $bids[$key]['bidder'] = $userDb->getUser($value['user_id'] ?? null);
 
                 if ($bids[$key]['bidder']['profile_image']) {
                     $bids[$key]['profile_image'] = Services::fullImageURL($bids[$key]['bidder']['profile_image']);
@@ -90,7 +90,7 @@ class Bid extends ResourceController
 
         $userDb = new UserModel;
 
-        $bid['bidder'] = $userDb->getUser(id: $value['user_id'] ?? -69);
+        $bid['bidder'] = $userDb->getUser($value['user_id'] ?? null);
 
         if ($bid['bidder']['profile_image']) {
             $bid['bidder']['profile_image'] = Services::fullImageURL($bid['bidder']['profile_image']);
