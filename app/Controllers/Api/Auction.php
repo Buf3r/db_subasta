@@ -123,6 +123,27 @@ class Auction extends ResourceController
             return $this->failNotFound(description: 'Item not found');
         }
 
+        // Verificar créditos o subastas gratis
+        $userDb = new UserModel;
+        $user = $userDb->find($this->userId);
+
+        if ($user['free_auctions_used'] < 2) {
+            // Tiene subastas gratis disponibles
+            $userDb->update($this->userId, [
+                'free_auctions_used' => $user['free_auctions_used'] + 1
+            ]);
+        } elseif ($user['credits'] > 0) {
+            // Usar un crédito
+            $userDb->update($this->userId, [
+                'credits' => $user['credits'] - 1
+            ]);
+        } else {
+            return $this->fail(
+                'No tienes créditos disponibles. Necesitas comprar créditos para publicar más subastas.',
+                403
+            );
+        }
+
         $insert = [
             'item_id'        => $this->request->getVar('item_id'),
             'user_id'        => $this->userId,
@@ -317,6 +338,43 @@ class Auction extends ResourceController
             'status' => 200,
             'messages' => ['success' => 'OK'],
             'data' => $auction,
+        ]);
+    }
+
+    public function setVip($id)
+    {
+        $db = new AuctionModel;
+        $auction = $db->where([
+            'auction_id' => $id,
+            'user_id'    => $this->userId,
+        ])->first();
+
+        if (!$auction) {
+            return $this->failNotFound('Auction not found');
+        }
+
+        $userDb = new UserModel;
+        $user = $userDb->find($this->userId);
+
+        if ($user['credits'] < 1) {
+            return $this->fail('No tienes créditos suficientes para VIP', 403);
+        }
+
+        $now = new \DateTime();
+        $end = new \DateTime('+48 hours');
+
+        $userDb->update($this->userId, [
+            'credits' => $user['credits'] - 1
+        ]);
+
+        $db->update($id, [
+            'vip_start' => $now->format('Y-m-d H:i:s'),
+            'vip_end'   => $end->format('Y-m-d H:i:s'),
+        ]);
+
+        return $this->respondUpdated([
+            'status'   => 200,
+            'messages' => ['success' => 'Auction is now VIP for 48 hours'],
         ]);
     }
 

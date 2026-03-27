@@ -14,14 +14,10 @@ class AuctionModel extends Model
     protected $returnType       = 'array';
     protected $useSoftDeletes   = true;
     protected $protectFields    = true;
-    protected $allowedFields    = [
-        'item_id',
-        'user_id',
-        'final_price',
-        'winner_user_id',
-        'status',
-        'date_completed',
-    ];
+    protected $allowedFields = [
+    'item_id', 'user_id', 'final_price', 'winner_user_id',
+    'status', 'date_completed', 'vip_start', 'vip_end',
+];
 
     // Dates
     protected $useTimestamps = true;

@@ -39,12 +39,15 @@ $routes->post('api/users', 'Api\User::create', ['filter' => 'cors']);
 
 $routes->get('api/cron/close-expired', 'Api\CronController::closeExpired');
 $routes->get('api/cron/test-notification', 'Api\CronController::testNotification');
+$routes->get('api/status', 'Api\StatusController::index');
 //$routes->get('api/debug', 'Api\AuthController::debug');
 
 $routes->group('api', ['filter' => 'auth', 'cors'], function (RouteCollection $routes) {
 
     $routes->post('items/(:segment)/images/update', 'Api\Item::updateItemImages/$1');
     $routes->resource('items', ['controller' => 'Api\Item']);
+
+    $routes->post('auctions/(:num)/vip', 'Api\Auction::setVip/$1');
 
     $routes->get('auctions/(:segment)/bids', 'Api\Bid::showBids/$1');
     $routes->patch('auctions/(:segment)/winner', 'Api\Auction::setWinner/$1');

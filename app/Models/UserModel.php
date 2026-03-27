@@ -16,7 +16,9 @@ class UserModel extends Model
     protected $protectFields    = true;
     protected $allowedFields = [
     'username', 'password_hash', 'name', 'email',
-    'phone', 'city', 'profile_image', 'fcm_token'];
+    'phone', 'city', 'profile_image', 'fcm_token',
+    'credits', 'free_auctions_used'
+];
 
     // Dates
     protected $useTimestamps = true;
