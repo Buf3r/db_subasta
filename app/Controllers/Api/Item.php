@@ -90,8 +90,9 @@ class Item extends BaseController
             'description'   => $this->request->getVar('description'),
             'location'      => $this->request->getVar('location'),
             'condition'     => $this->request->getVar('condition'),
-            'initial_price' => $this->request->getVar('initial_price'),
             'category'      => $this->request->getVar('category'),
+            'app_origin'    => $this->request->getVar('app_origin') ?? 'subastalo',
+            'initial_price' => $this->request->getVar('initial_price'),
         ];
 
         $db = new ItemModel;

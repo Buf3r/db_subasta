@@ -21,6 +21,7 @@ class ItemModel extends Model
     'location',
     'condition',
     'category',
+    'app_origin',
     'initial_price'
 ];
 
