@@ -11,13 +11,16 @@ class StatusController extends ResourceController
     use ResponseTrait;
 
     public function index()
-    {
-        $db = new StatusModel;
-        $status = $db->getStatus();
+{
+    $db = new StatusModel;
+    $status = $db->getStatus();
 
-        return $this->respond([
-            'status' => 200,
-            'data'   => $status,
-        ]);
-    }
+    return $this->respond([
+        'status' => 200,
+        'data'   => [
+            'status_server'   => $status['Status_Server'] ?? 'online',
+            'min_app_version' => '1.0.0',
+        ],
+    ]);
+}
 }

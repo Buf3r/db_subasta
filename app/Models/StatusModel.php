@@ -7,11 +7,12 @@ use CodeIgniter\Model;
 class StatusModel extends Model
 {
     protected $table      = 'status';
-    protected $primaryKey = 'id';
+    protected $primaryKey = 'Status_Server';
     protected $returnType = 'array';
+    protected $allowedFields = ['Status_Server'];
 
     public function getStatus(): array
     {
-        return $this->orderBy('id', 'DESC')->first();
+        return $this->first() ?? [];
     }
 }
