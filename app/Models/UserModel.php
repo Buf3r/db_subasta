@@ -47,11 +47,11 @@ class UserModel extends Model
     public function getUser($id = NULL)
     {
         if ($id != NULL) {
-            return $this->select('user_id, username, name, email, phone, profile_image, created_at')
+            return $this->select('user_id, username, name, email, phone, profile_image, city, credits, free_auctions_used, created_at')
                 ->where($this->primaryKey, $id)
                 ->first();
         }
-        return $this->select('user_id, username, name, email, phone, profile_image, created_at')->findAll();
+        return $this->select('user_id, username, name, email, phone, profile_image, city, credits, free_auctions_used, created_at')->findAll();
     }
 
     public function getUserByIdUsernameEmail($id, $username, $email)

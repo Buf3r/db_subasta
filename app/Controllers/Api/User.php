@@ -241,6 +241,28 @@ class User extends ResourceController
         ]);
     }
 
+    public function myCredits()
+    {
+        $db = new UserModel;
+        $user = $db->find($this->userId);
+
+        if (!$user) {
+            return $this->failNotFound('User not found');
+        }
+
+        $freeRemaining = max(0, 2 - $user['free_auctions_used']);
+
+        return $this->respond([
+            'status' => 200,
+            'data'   => [
+                'credits'          => $user['credits'],
+                'free_auctions_used' => $user['free_auctions_used'],
+                'free_remaining'   => $freeRemaining,
+                'can_publish'      => $freeRemaining > 0 || $user['credits'] > 0,
+            ],
+        ]);
+    }
+
     public function delete($id = null)
     {
         $db = new UserModel;
@@ -259,6 +281,37 @@ class User extends ResourceController
         return $this->respond([
             'status' => 200,
             'messages' => ['success' => 'User successfully deleted'],
+        ]);
+    }
+
+    public function addCredits($id = null)
+    {
+        // Solo para admin — agregar una clave secreta
+        $adminKey = $this->request->getVar('admin_key');
+        if ($adminKey !== env('ADMIN_KEY')) {
+            return $this->failForbidden('Access forbidden');
+        }
+
+        $amount = intval($this->request->getVar('amount'));
+        if ($amount <= 0) {
+            return $this->fail('Amount must be greater than 0');
+        }
+
+        $db = new UserModel;
+        $user = $db->find($id);
+
+        if (!$user) {
+            return $this->failNotFound('User not found');
+        }
+
+        $db->update($id, [
+            'credits' => $user['credits'] + $amount
+        ]);
+
+        return $this->respondUpdated([
+            'status'   => 200,
+            'messages' => ['success' => "Added $amount credits to user $id"],
+            'data'     => ['new_balance' => $user['credits'] + $amount],
         ]);
     }
 }

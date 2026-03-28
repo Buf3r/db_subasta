@@ -6,6 +6,8 @@ printf "CI_ENVIRONMENT = production\napp.baseURL = https://dbsubasta-production.
 # Agregar FCM_CREDENTIALS por separado para evitar problemas con caracteres especiales
 echo "FCM_CREDENTIALS = ${FCM_CREDENTIALS}" >> /var/www/html/.env
 
+echo "ADMIN_KEY = ${ADMIN_KEY}" >> /var/www/html/.env
+
 # Correr migraciones si se pasa el argumento
 if [ "$1" = "migrate" ]; then
     php spark migrate --all
