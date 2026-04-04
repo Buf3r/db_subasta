@@ -255,10 +255,11 @@ class User extends ResourceController
         return $this->respond([
             'status' => 200,
             'data'   => [
-                'credits'          => $user['credits'],
-                'free_auctions_used' => $user['free_auctions_used'],
-                'free_remaining'   => $freeRemaining,
-                'can_publish'      => $freeRemaining > 0 || $user['credits'] > 0,
+                'vip'                => (bool) $user['vip'],
+                'credits'            => (int) $user['credits'],
+                'free_auctions_used' => (int) $user['free_auctions_used'],
+                'free_remaining'     => $freeRemaining,
+                'can_publish'        => $user['vip'] == 1 || $freeRemaining > 0 || $user['credits'] > 0,
             ],
         ]);
     }

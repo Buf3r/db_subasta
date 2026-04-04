@@ -109,56 +109,41 @@ class Auction extends ResourceController
 
     public function create()
     {
-        if (!$this->validate([
-            'item_id'        => 'required|numeric',
-            'date_completed' => 'permit_empty|valid_date',
-        ])) {
-            return $this->failValidationErrors(\Config\Services::validation()->getErrors());
-        }
-
-        $itemDb = new ItemModel;
-        $itemExist = $itemDb->where([
-            'item_id' => $this->request->getVar('item_id'),
-            'user_id' => $this->userId
-        ])->first();
-
-        if (!$itemExist) {
-            return $this->failNotFound(description: 'Item not found');
-        }
-
-        // Verificar créditos o subastas gratis
+        // 1. Verificar permisos (Sin actualizar la DB todavía)
         $userDb = new UserModel;
         $user = $userDb->find($this->userId);
 
-        if ($user['free_auctions_used'] < 2) {
-            // Tiene subastas gratis disponibles
-            $userDb->update($this->userId, [
-                'free_auctions_used' => $user['free_auctions_used'] + 1
-            ]);
+        $useFree = false;
+        $useCredit = false;
+
+        if ($user['vip'] == 1) {
+            // Es VIP: No hacemos nada, permitimos el flujo
+        } elseif ($user['free_auctions_used'] < 2) {
+            $useFree = true;
         } elseif ($user['credits'] > 0) {
-            // Usar un crédito
-            $userDb->update($this->userId, [
-                'credits' => $user['credits'] - 1
-            ]);
+            $useCredit = true;
         } else {
-            return $this->fail(
-                'No tienes créditos disponibles. Necesitas comprar créditos para publicar más subastas.',
-                403
-            );
+            return $this->fail('No tienes créditos ni subastas gratis disponibles.', 403);
         }
 
-        $insert = [
+        // 2. Intentar la inserción de la subasta
+        $db = new AuctionModel;
+        $save = $db->insert([
             'item_id'        => $this->request->getVar('item_id'),
             'user_id'        => $this->userId,
             'status'         => 'open',
             'date_completed' => $this->request->getVar('date_completed'),
-        ];
-
-        $db = new AuctionModel;
-        $save = $db->insert($insert);
+        ]);
 
         if (!$save) {
-            return $this->failServerError(description: 'Failed to create auction');
+            return $this->failServerError('Error al crear la subasta');
+        }
+
+        // 3. SI LA SUBASTA SE CREÓ, cobramos al usuario
+        if ($useFree) {
+            $userDb->update($this->userId, ['free_auctions_used' => $user['free_auctions_used'] + 1]);
+        } elseif ($useCredit) {
+            $userDb->update($this->userId, ['credits' => $user['credits'] - 1]);
         }
 
         return $this->respondCreated([
