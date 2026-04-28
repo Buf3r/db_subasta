@@ -35,8 +35,13 @@ class Auction extends ResourceController
                 appOrigin: $appOrigin,
                 allStatus: true
             );
+            // En lugar de failNotFound, devolvemos un array vacío con estatus 200
             if (!$auctions) {
-                return $this->failNotFound('Auctions not found');
+                return $this->respond([
+                    'status' => 200,
+                    'messages' => ['success' => 'No auctions available'],
+                    'data' => [], // Enviamos la lista vacía para que Flutter siga su camino
+                ]);
             }
 
             $imageDb = new ImageModel;
