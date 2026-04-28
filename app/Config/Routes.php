@@ -36,6 +36,10 @@ $routes->get('/', 'Home::index');
 $routes->post('api/login', 'Api\AuthController::login', ['filter' => 'cors']);
 
 $routes->post('api/users', 'Api\User::create', ['filter' => 'cors']);
+$routes->post('api/otp/send', 'Api\OtpController::send', ['filter' => 'cors']);
+$routes->post('api/otp/verify', 'Api\OtpController::verify', ['filter' => 'cors']);
+$routes->post('api/otp/send', 'Api\OtpController::send');
+$routes->post('api/otp/verify', 'Api\OtpController::verify');
 
 $routes->get('api/cron/close-expired', 'Api\CronController::closeExpired');
 $routes->get('api/cron/test-notification', 'Api\CronController::testNotification');
