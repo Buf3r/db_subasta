@@ -37,10 +37,11 @@ class Auction extends ResourceController
             );
             // En lugar de failNotFound, devolvemos un array vacío con estatus 200
             if (!$auctions) {
+                // return $this->failNotFound('Auctions not found'); <--- ESTO ES LO QUE ESTÁ MATANDO LA APP
                 return $this->respond([
                     'status' => 200,
-                    'messages' => ['success' => 'No auctions available'],
-                    'data' => [], // Enviamos la lista vacía para que Flutter siga su camino
+                    'messages' => ['success' => 'OK'],
+                    'data' => [], 
                 ]);
             }
 
@@ -233,7 +234,12 @@ class Auction extends ResourceController
         );
 
         if (!$auctions) {
-            return $this->failNotFound('Auctions not found');
+            // return $this->failNotFound('Auctions not found'); <--- ESTO ES LO QUE ESTÁ MATANDO LA APP
+            return $this->respond([
+                'status' => 200,
+                'messages' => ['success' => 'OK'],
+                'data' => [], 
+            ]);
         }
 
         $imageDb = new ImageModel;
