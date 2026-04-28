@@ -27,7 +27,7 @@ class Item extends BaseController
         $items = $db->where(['user_id' => $this->userId])->findAll();
 
         if (!$items) {
-            return $this->failNotFound('Items not found');
+            return $this->failNotFound('No tienes artículos listados');
         }
 
         $auctionDb = new AuctionModel;
