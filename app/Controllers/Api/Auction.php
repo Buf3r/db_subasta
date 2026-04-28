@@ -84,7 +84,7 @@ class Auction extends ResourceController
         $auction = $db->getAuction($id, allStatus: true);
 
         if (!$auction) {
-            return $this->failNotFound('Auction not found');
+            return $this->failNotFound('No has creaddo ninguna subasta aún');
         }
 
         $userDb = new UserModel;
@@ -129,7 +129,7 @@ class Auction extends ResourceController
         ])->first();
 
         if (!$itemExist) {
-            return $this->failNotFound(description: 'Item not found');
+            return $this->failNotFound(description: 'No se encontró el item o no tienes permiso para subastarlo');
         }
         // 1. Verificar permisos (Sin actualizar la DB todavía)
         $userDb = new UserModel;
@@ -187,7 +187,7 @@ class Auction extends ResourceController
         $exist = $db->getAuction($id, where: ['items.user_id' => $this->userId]);
 
         if (!$exist) {
-            return $this->failNotFound(description: 'Auction not found');
+            return $this->failNotFound(description: 'No se encontró la subasta o no tienes permiso para modificarla');
         }
 
         $update = [
@@ -212,7 +212,7 @@ class Auction extends ResourceController
         $db = new AuctionModel;
         $exist = $db->getAuction($id, allStatus: true);
 
-        if (!$exist) return $this->failNotFound(description: 'Auction not found');
+        if (!$exist) return $this->failNotFound(description: 'No se encontró la subasta o no tienes permiso para eliminarla');
 
         $db = new AuctionModel;
         $delete = $db->delete($id);
@@ -331,7 +331,7 @@ class Auction extends ResourceController
         );
 
         if (!$auction) {
-            return $this->failNotFound('Auction not found');
+            return $this->failNotFound('Subasta no encontrada');
         }
 
         $imageDb = new ImageModel;
@@ -365,7 +365,7 @@ class Auction extends ResourceController
         ])->first();
 
         if (!$auction) {
-            return $this->failNotFound('Auction not found');
+            return $this->failNotFound('Subasta no encontrada');
         }
 
         $userDb = new UserModel;
@@ -407,7 +407,7 @@ class Auction extends ResourceController
         $bid = $bidDb->where(['bid_id' => $bidId])->first();
 
         if (!$bid) {
-            return $this->failNotFound('Bid not found');
+            return $this->failNotFound('Oferta no encontrada');
         }
 
         $db = new AuctionModel;

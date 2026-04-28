@@ -25,7 +25,7 @@ class User extends ResourceController
         $users = $db->getUser();
 
         if (!$users) {
-            return $this->failNotFound('Users not found');
+            return $this->failNotFound('Usuarios no encontrados');
         }
 
         return $this->respond([
@@ -41,7 +41,7 @@ class User extends ResourceController
         $user = $db->getUser($id);
 
         if (!$user) {
-            return $this->failNotFound('User not found');
+            return $this->failNotFound('Usuario no encontrado');
         }
 
         return $this->respond([
@@ -129,7 +129,7 @@ class User extends ResourceController
         $exist = $db->where(['user_id' => $this->userId])->first();
 
         if (!$exist) {
-            return $this->failNotFound(description: 'User not found');
+            return $this->failNotFound(description: 'Usuario no encontrado');
         }
 
         $update = [
@@ -142,12 +142,12 @@ class User extends ResourceController
         $save = $db->update($this->userId, $update);
 
         if (!$save) {
-            return $this->failServerError(description: 'Failed to update user');
+            return $this->failServerError(description: 'Fallo al actualizar el usuario');
         }
 
         return $this->respondUpdated([
             'status' => 200,
-            'messages' => ['success' => 'User updated successfully'],
+            'messages' => ['success' => 'Usuario actualizado exitosamente'],
         ]);
     }
 
@@ -163,7 +163,7 @@ class User extends ResourceController
         $exist = $db->where(['user_id' => $this->userId])->first();
 
         if (!$exist) {
-            return $this->failNotFound(description: 'User not found');
+            return $this->failNotFound(description: 'Usuario no encontrado');
         }
 
         $fileName = null;
@@ -186,12 +186,12 @@ class User extends ResourceController
         $save = $db->update($this->userId, ['profile_image' => $fileName]);
 
         if (!$save) {
-            return $this->failServerError(description: 'Failed to update profile image');
+            return $this->failServerError(description: 'Fallo al actualizar la imagen de perfil');
         }
 
         return $this->respondUpdated([
             'status' => 200,
-            'messages' => ['success' => 'Profile image updated successfully'],
+            'messages' => ['success' => 'Imagen de perfil actualizada exitosamente'],
         ]);
     }
 
@@ -201,7 +201,7 @@ class User extends ResourceController
         $exist = $db->where(['user_id' => $this->userId])->first();
 
         if (!$exist) {
-            return $this->failNotFound(description: 'User not found');
+            return $this->failNotFound(description: 'Usuario no encontrado');
         }
 
         $fcmToken = $this->request->getVar('fcm_token');
@@ -231,7 +231,7 @@ class User extends ResourceController
         $exist = $db->where(['user_id' => $this->userId])->first();
 
         if (!$exist) {
-            return $this->failNotFound(description: 'User not found');
+            return $this->failNotFound(description: 'Usuario no encontrado');
         }
 
         if (!password_verify($this->request->getVar('old_password'), $exist['password_hash'])) {
@@ -260,7 +260,7 @@ class User extends ResourceController
         $user = $db->find($this->userId);
 
         if (!$user) {
-            return $this->failNotFound('User not found');
+            return $this->failNotFound('Usuario no encontrado');
         }
 
         $freeRemaining = max(0, 2 - $user['free_auctions_used']);
@@ -282,7 +282,7 @@ class User extends ResourceController
         $db = new UserModel;
         $exist = $db->where(['user_id' => $this->userId])->first();
 
-        if (!$exist) return $this->failNotFound(description: 'User not found');
+        if (!$exist) return $this->failNotFound(description: 'Usuario no encontrado');
 
         if ($exist['profile_image']) {
             deleteFromCloudinary($exist['profile_image']);
@@ -290,11 +290,11 @@ class User extends ResourceController
 
         $delete = $db->delete($this->userId);
 
-        if (!$delete) return $this->failServerError(description: 'Failed to delete user');
+        if (!$delete) return $this->failServerError(description: 'Fallo al eliminar el usuario');
 
         return $this->respond([
             'status' => 200,
-            'messages' => ['success' => 'User successfully deleted'],
+            'messages' => ['success' => 'Usuario eliminado exitosamente'],
         ]);
     }
 
@@ -315,7 +315,7 @@ class User extends ResourceController
         $user = $db->find($id);
 
         if (!$user) {
-            return $this->failNotFound('User not found');
+            return $this->failNotFound('Usuario no encontrado');
         }
 
         $db->update($id, [
@@ -324,7 +324,7 @@ class User extends ResourceController
 
         return $this->respondUpdated([
             'status'   => 200,
-            'messages' => ['success' => "Added $amount credits to user $id"],
+            'messages' => ['success' => "Creditos agregados exitosamente al usuario $id"],
             'data'     => ['new_balance' => $user['credits'] + $amount],
         ]);
     }

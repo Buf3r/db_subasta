@@ -29,7 +29,7 @@ class Bid extends ResourceController
         $bids = $db->getBid();
 
         if (!$bids) {
-            return $this->failNotFound('Bids not found');
+            return $this->failNotFound('Ofertas no encontradas');
         }
 
         $userDb = new UserModel;
@@ -85,7 +85,7 @@ class Bid extends ResourceController
         $bid = $db->getBid($id);
 
         if (!$bid) {
-            return $this->failNotFound('Bid not found');
+            return $this->failNotFound('Oferta no encontrada');
         }
 
         $userDb = new UserModel;
@@ -116,7 +116,7 @@ class Bid extends ResourceController
         $checkAuction = $auctionDb->find($this->request->getVar('auction_id'));
 
         if (!$checkAuction) {
-            return $this->failNotFound(description: 'Failed to place bid, auction not found');
+            return $this->failNotFound(description: 'Fallo al encontrar la subasta');
         }
 
         $insert = [
@@ -129,7 +129,7 @@ class Bid extends ResourceController
         $save = $db->insert($insert);
 
         if (!$save) {
-            return $this->failServerError(description: 'Failed to place bid');
+            return $this->failServerError(description: 'Fallo al colocar la oferta');
         }
 
         // DEBUG temporal llegan mensajes de prueba con https://dbsubasta-production.up.railway.app/api/bids y con un auth y token
@@ -269,7 +269,7 @@ class Bid extends ResourceController
         ])->first();
 
         if (!$exist) {
-            return $this->failNotFound(description: 'Bid not found');
+            return $this->failNotFound(description: 'Oferta no encontrada');
         }
 
         $update = [
@@ -296,11 +296,11 @@ class Bid extends ResourceController
         $db = new BidModel;
         $exist = $db->where(['bid_id' => $id, 'user_id' => $this->userId])->first();
 
-        if (!$exist) return $this->failNotFound(description: 'Bid not found');
+        if (!$exist) return $this->failNotFound(description: 'Oferta no encontrada');
 
         $delete = $db->delete($id);
 
-        if (!$delete) return $this->failServerError(description: 'Failed to delete bid');
+        if (!$delete) return $this->failServerError(description: 'Fallo al eliminar la oferta');
 
         return $this->respondDeleted([
             'status' => 200,

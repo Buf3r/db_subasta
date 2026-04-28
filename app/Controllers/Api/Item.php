@@ -27,7 +27,7 @@ class Item extends BaseController
         $items = $db->where(['user_id' => $this->userId])->findAll();
 
         if (!$items) {
-            return $this->failNotFound('No tienes artículos listados');
+            return $this->failNotFound('No has creado ningún item aún');
         }
 
         $auctionDb = new AuctionModel;
@@ -53,7 +53,7 @@ class Item extends BaseController
         $item = $db->where(['item_id' => $id, 'user_id' => $this->userId])->first();
 
         if (!$item) {
-            return $this->failNotFound('Item not found');
+            return $this->failNotFound('Artículo no encontrado');
         }
 
         $auctionDb = new AuctionModel;
@@ -145,7 +145,7 @@ class Item extends BaseController
         $exist = $db->where(['item_id' => $id, 'user_id' => $this->userId])->first();
 
         if (!$exist) {
-            return $this->failNotFound(description: 'Item not found');
+            return $this->failNotFound(description: 'Artículo no encontrado');
         }
 
         $update = [
@@ -160,12 +160,12 @@ class Item extends BaseController
         $save = $db->update($id, $update);
 
         if (!$save) {
-            return $this->failServerError(description: 'Failed to update item');
+            return $this->failServerError(description: 'Fallo al actualizar el artículo');
         }
 
         return $this->respondUpdated([
             'status' => 200,
-            'messages' => ['success' => 'Item updated successfully'],
+            'messages' => ['success' => 'Artículo actualizado exitosamente'],
         ]);
     }
 
@@ -182,7 +182,7 @@ class Item extends BaseController
         $exist = $db->where(['item_id' => $id, 'user_id' => $this->userId])->first();
 
         if (!$exist) {
-            return $this->failNotFound(description: 'Item not found');
+            return $this->failNotFound(description: 'Artículo no encontrado');
         }
 
         $removedCount = 0;
@@ -217,7 +217,7 @@ class Item extends BaseController
 
         return $this->respondUpdated([
             'status' => 200,
-            'messages' => ['success' => 'Item images updated successfully'],
+            'messages' => ['success' => 'Imágenes del artículo actualizadas exitosamente'],
             'removed' => $removedCount,
             'added'   => $addedCount,
         ]);
@@ -228,7 +228,7 @@ class Item extends BaseController
         $db = new ItemModel;
         $exist = $db->where(['item_id' => $id, 'user_id' => $this->userId])->first();
 
-        if (!$exist) return $this->failNotFound(description: 'Item not found');
+        if (!$exist) return $this->failNotFound(description: 'Artículo no encontrado');
 
         $imageDb = new ImageModel;
         $images = $imageDb->where(['item_id' => $id])->findAll();
@@ -240,11 +240,11 @@ class Item extends BaseController
 
         $delete = $db->delete($id);
 
-        if (!$delete) return $this->failServerError(description: 'Failed to delete item');
+        if (!$delete) return $this->failServerError(description: 'Fallo al eliminar el artículo');
 
         return $this->respondDeleted([
             'status' => 200,
-            'messages' => ['success' => 'Item successfully deleted'],
+            'messages' => ['success' => 'Artículo eliminado exitosamente'],
         ]);
     }
 }

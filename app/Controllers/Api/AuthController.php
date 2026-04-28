@@ -28,7 +28,7 @@ class AuthController extends BaseController
     $user = $db->where('username', $this->request->getVar('username'))->first();
 
     if (!$user) {
-        return $this->failNotFound('User not found');
+        return $this->failNotFound('Usuario no encontrado');
     }
 
     if (!password_verify($this->request->getVar('password'), $user['password_hash'])) {
