@@ -11,50 +11,50 @@ class OtpController extends ResourceController
 {
     use ResponseTrait;
 
-   public function send()
-    {
-        $phone = $this->request->getVar('phone');
+    public function send()
+        {
+            $phone = $this->request->getVar('phone');
 
-        if (!$phone) {
-            return $this->fail('El teléfono es requerido', 400);
+            if (!$phone) {
+                return $this->fail('El teléfono es requerido', 400);
+            }
+
+            // 1. Limpiamos el teléfono de caracteres no numéricos
+            $cleanPhone = preg_replace('/\D/', '', $phone);
+
+            // 2. Buscamos el usuario en la base de datos
+            $userDb = new UserModel;
+            $user = $userDb->groupStart()
+                ->where('phone', $cleanPhone)
+                ->orWhere('phone', '0' . $cleanPhone)
+                ->orWhere('phone', ltrim($cleanPhone, '0'))
+                ->groupEnd()
+                ->first();
+
+            if (!$user) {
+                return $this->fail('No existe una cuenta con ese número de teléfono.', 404);
+            }
+
+            // 3. Generamos el código
+            try {
+                $otpDb = new OtpModel;
+                $code = $otpDb->generateCode($this->normalizePhone($cleanPhone));
+            } catch (\Throwable $e) {
+                return $this->failServerError('Error generando código: ' . $e->getMessage());
+            }
+
+            // 4. RESPUESTA EXITOSA PARA FLUTTER Y POSTMAN
+            // Se devuelve el estado 200 para que la app no muestre el error inesperado
+            return $this->respond([
+                'status'   => 200,
+                'messages' => ['success' => 'Código generado exitosamente'],
+                'data'     => [
+                    'phone'      => $cleanPhone,
+                    // Puedes comentar o descomentar esta línea dependiendo si quieres ver el código en desarrollo
+                    'code'       => $code
+                ]
+            ]);
         }
-
-        // 1. Limpiamos el teléfono de caracteres no numéricos
-        $cleanPhone = preg_replace('/\D/', '', $phone);
-
-        // 2. Buscamos el usuario en la base de datos
-        $userDb = new UserModel;
-        $user = $userDb->groupStart()
-            ->where('phone', $cleanPhone)
-            ->orWhere('phone', '0' . $cleanPhone)
-            ->orWhere('phone', ltrim($cleanPhone, '0'))
-            ->groupEnd()
-            ->first();
-
-        if (!$user) {
-            return $this->fail('No existe una cuenta con ese número de teléfono.', 404);
-        }
-
-        // 3. Generamos el código
-        try {
-            $otpDb = new OtpModel;
-            $code = $otpDb->generateCode($this->normalizePhone($cleanPhone));
-        } catch (\Throwable $e) {
-            return $this->failServerError('Error generando código: ' . $e->getMessage());
-        }
-
-        // 4. RESPUESTA EXITOSA PARA FLUTTER Y POSTMAN
-        // Se devuelve el estado 200 para que la app no muestre el error inesperado
-        return $this->respond([
-            'status'   => 200,
-            'messages' => ['success' => 'Código generado exitosamente'],
-            'data'     => [
-                'phone'      => $cleanPhone,
-                // Puedes comentar o descomentar esta línea dependiendo si quieres ver el código en desarrollo
-                'code'       => $code
-            ]
-        ]);
-    }
 
     private function normalizePhone(string $phone): string
     {
@@ -81,26 +81,45 @@ class OtpController extends ResourceController
             return $this->fail('Teléfono y código son requeridos', 400);
         }
 
+        // Normalizamos el teléfono para asegurarnos de que coincide con el de la BD
+        $cleanPhone = preg_replace('/\D/', '', $phone);
+
         $otpDb = new OtpModel;
-        $valid = $otpDb->verifyCode($phone, $code);
+        
+        // Verificamos el código
+        $valid = $otpDb->verifyCode($cleanPhone, $code);
 
         if (!$valid) {
-            return $this->fail('Código inválido o expirado.', 401);
+            // Respondemos con un estado 401 estructurado y legible para Flutter
+            return $this->failUnauthorized('Código inválido o expirado.');
         }
 
         $userDb = new UserModel;
-        $user = $userDb->where('phone', $phone)->first();
+        $user = $userDb->groupStart()
+            ->where('phone', $cleanPhone)
+            ->orWhere('phone', '0' . $cleanPhone)
+            ->orWhere('phone', ltrim($cleanPhone, '0'))
+            ->groupEnd()
+            ->first();
 
         if (!$user) {
             return $this->failNotFound('Usuario no encontrado.');
         }
 
+        // Generamos el token de autenticación
         $token = $this->generateJWT($user['user_id']);
 
+        // RESPUESTA EXITOSA ESPERADA POR FLUTTER
         return $this->respond([
             'status'   => 200,
             'messages' => ['success' => 'OK'],
-            'data'     => ['token' => $token],
+            'data'     => [
+                'token' => $token,
+                'user'  => [
+                    'user_id' => $user['user_id'],
+                    'phone'   => $user['phone']
+                ]
+            ],
         ]);
     }
 
