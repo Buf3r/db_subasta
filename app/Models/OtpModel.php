@@ -6,7 +6,8 @@ use CodeIgniter\Model;
 
 class OtpModel extends Model
 {
-    protected $table      = 'otp_codes';
+    // Asegúrate de que este nombre sea EXACTAMENTE el de tu base de datos en MySQL
+    protected $table      = 'otp_codes'; 
     protected $primaryKey = 'id';
     protected $returnType = 'array';
     protected $allowedFields = ['phone', 'code', 'expires_at', 'used', 'created_at'];
