@@ -19,15 +19,15 @@ class OtpController extends ResourceController
             return $this->fail('El teléfono es requerido', 400);
         }
 
-        // 1. Limpiamos el teléfono de caracteres no numéricos
-        $cleanPhone = preg_replace('/\D/', '', $phone);
+        // Normalizar el número para buscar en BD
+        $normalizedPhone = $this->normalizePhone($phone);
 
-        // 2. Buscamos el usuario en la base de datos usando la variable correcta
+        // Buscar con cualquier formato posible
         $userDb = new UserModel;
         $user = $userDb->groupStart()
-            ->where('phone', $cleanPhone)
-            ->orWhere('phone', '0' . $cleanPhone)
-            ->orWhere('phone', ltrim($cleanPhone, '0'))
+            ->where('phone', $normalizedPhone)
+            ->orWhere('phone', '0' . substr($normalizedPhone, 2)) // 584242... → 04242...
+            ->orWhere('phone', substr($normalizedPhone, 2))       // 584242... → 4242...
             ->groupEnd()
             ->first();
 
@@ -35,16 +35,10 @@ class OtpController extends ResourceController
             return $this->fail('No existe una cuenta con ese número de teléfono.', 404);
         }
 
-        // 3. Generamos el código dentro de un try-catch para capturar cualquier excepción
-        try {
-            $otpDb = new OtpModel;
-            $code = $otpDb->generateCode($this->normalizePhone($cleanPhone));
-        } catch (\Throwable $e) {
-            return $this->failServerError('Error generando código: ' . $e->getMessage());
-        }
+        $otpDb = new OtpModel;
+        $code = $otpDb->generateCode($normalizedPhone);
 
-        // 4. Enviamos el mensaje de WhatsApp
-        $normalizedPhone = $this->normalizePhone($cleanPhone);
+        // Debug temporal — ver qué pasa con WhatsApp
         $sent = $this->sendWhatsApp($normalizedPhone, $code);
 
         if (!$sent) {
@@ -59,6 +53,9 @@ class OtpController extends ResourceController
 
     private function normalizePhone(string $phone): string
     {
+        // Elimina todo excepto dígitos
+        $phone = preg_replace('/\D/', '', $phone);
+        
         // Si empieza con 0 → reemplaza por 58
         if (str_starts_with($phone, '0')) {
             return '58' . substr($phone, 1);
@@ -88,6 +85,7 @@ class OtpController extends ResourceController
             return $this->fail('Código inválido o expirado.', 401);
         }
 
+        // Obtener el usuario y generar JWT igual que en login
         $userDb = new UserModel;
         $user = $userDb->where('phone', $phone)->first();
 
@@ -95,6 +93,7 @@ class OtpController extends ResourceController
             return $this->failNotFound('Usuario no encontrado.');
         }
 
+        // Generar JWT usando el mismo helper del AuthController
         $token = $this->generateJWT($user['user_id']);
 
         return $this->respond([
@@ -110,9 +109,12 @@ class OtpController extends ResourceController
             $zernioApiKey = env('ZERNIO_API_KEY');
             $zernioPhoneId = env('ZERNIO_PHONE_ID');
 
+            // Formatear número venezolano: 04121234567 → 584121234567
+            $formattedPhone = $this->formatVenezuelanPhone($phone);
+
             $payload = [
                 'messaging_product' => 'whatsapp',
-                'to'                => $phone,
+                'to'                => $formattedPhone,
                 'type'              => 'text',
                 'text'              => [
                     'body' => "🔐 Tu código de verificación de *Subastalo* es:\n\n*$code*\n\nVálido por 10 minutos. No lo compartas con nadie."
