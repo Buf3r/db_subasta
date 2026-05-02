@@ -6,42 +6,60 @@ use CodeIgniter\Model;
 
 class OtpModel extends Model
 {
-    // Asegúrate de que este nombre sea EXACTAMENTE el de tu base de datos en MySQL
-    protected $table      = 'otp_codes'; 
+    protected $table      = 'otp_codes';
     protected $primaryKey = 'id';
-    protected $returnType = 'array';
+
     protected $allowedFields = ['phone', 'code', 'expires_at', 'used', 'created_at'];
+
+    // Asegúrate de que los campos de fecha se manejen como objetos de fecha si usas un formato de base de datos.
+    protected $useTimestamps = false; 
 
     public function generateCode(string $phone): string
     {
-        // Invalida códigos anteriores del mismo teléfono
-        $this->where('phone', $phone)->set('used', 1)->update();
+        $cleanPhone = preg_replace('/\D/', '', $phone);
+        
+        // 1. Generamos un número aleatorio de 6 dígitos
+        $code = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
 
-        $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        // 2. Definimos la expiración (+10 minutos usando la hora local de Venezuela/Caracas configurada en el servidor)
         $expiresAt = date('Y-m-d H:i:s', strtotime('+10 minutes'));
 
-        $this->insert([
-            'phone'      => $phone,
+        // 3. Guardamos en la base de datos
+        $data = [
+            'phone'      => $cleanPhone,
             'code'       => $code,
             'expires_at' => $expiresAt,
             'used'       => 0,
             'created_at' => date('Y-m-d H:i:s'),
-        ]);
+        ];
+
+        $this->insert($data);
 
         return $code;
     }
 
     public function verifyCode(string $phone, string $code): bool
     {
-        $record = $this->where([
-            'phone' => $phone,
-            'code'  => $code,
-            'used'  => 0,
-        ])->where('expires_at >', date('Y-m-d H:i:s'))->first();
+        $cleanPhone = preg_replace('/\D/', '', $phone);
+        $nationalNumber = substr($cleanPhone, -10); // Toma los últimos 10 dígitos (ej. 4122944927)
 
-        if (!$record) return false;
+        // Buscamos los códigos no usados
+        $otps = $this->where('used', 0)
+                     ->where('code', $code)
+                     ->where('expires_at >=', date('Y-m-d H:i:s'))
+                     ->findAll();
 
-        $this->update($record['id'], ['used' => 1]);
-        return true;
+        foreach ($otps as $otp) {
+            $dbPhone = preg_replace('/\D/', '', $otp['phone']);
+            $dbNationalNumber = substr($dbPhone, -10);
+
+            if ($dbNationalNumber === $nationalNumber) {
+                // Actualizamos a usado
+                $this->update($otp['id'], ['used' => 1]);
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -89,13 +89,14 @@ class OtpController extends ResourceController
         // 2. Buscamos el código verificando diferentes formatos
         $valid = $otpDb->verifyCode($cleanPhone, $code);
 
+        // Si no es válido de inmediato, probamos con la validación alternativa
         if (!$valid) {
             $altPhone = ltrim($cleanPhone, '0');
             $valid = $otpDb->verifyCode($altPhone, $code);
         }
 
-        // Si no es válido, devolvemos el error exacto con el mensaje visible en la app
         if (!$valid) {
+            // Este mensaje se verá en el BLoC de Flutter y ya no aparecerá vacío
             return $this->failUnauthorized('Código inválido o expirado.');
         }
 
@@ -105,6 +106,7 @@ class OtpController extends ResourceController
             ->where('phone', $cleanPhone)
             ->orWhere('phone', '0' . $cleanPhone)
             ->orWhere('phone', ltrim($cleanPhone, '0'))
+            ->orWhere('phone', '58' . $cleanPhone)
             ->groupEnd()
             ->first();
 
