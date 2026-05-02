@@ -108,7 +108,6 @@ class OtpController extends ResourceController
     private function sendWhatsApp(string $phone, string $code): bool
     {
         try {
-            // Nota: Usamos Zenvia/Meta
             $zernioApiKey = env('ZERNIO_API_KEY');
             $zernioPhoneId = env('ZERNIO_PHONE_ID');
 
@@ -130,12 +129,26 @@ class OtpController extends ResourceController
             ]);
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
 
-            $response = json_decode(curl_exec($ch), true);
+            $responseRaw = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURL_INFO_HTTP_CODE); // Capturamos el código HTTP de respuesta
+            
+            // Opcional: registrar el error de cURL si existe
+            if (curl_errno($ch)) {
+                log_message('error', 'cURL Error: ' . curl_error($ch));
+            }
+            
             curl_close($ch);
 
+            $response = json_decode($responseRaw, true);
+
+            // Registro (log) en CodeIgniter para ver exactamente qué devolvió Facebook en la consola
+            log_message('error', 'WhatsApp API Response (' . $httpCode . '): ' . $responseRaw);
+
+            // Verificamos si existe el ID del mensaje
             return isset($response['messages'][0]['id']);
+            
         } catch (\Exception $e) {
-            log_message('error', 'OTP WhatsApp error: ' . $e->getMessage());
+            log_message('error', 'OTP WhatsApp error general: ' . $e->getMessage());
             return false;
         }
     }
