@@ -113,53 +113,60 @@ class OtpController extends ResourceController
         ]);
     }
 
-   private function sendWhatsApp(string $phone, string $code, string $apiKey, string $phoneId): bool
-    {
-        try {
-            $payload = [
-                'messaging_product' => 'whatsapp',
-                'to'                => $phone,
-                'type'              => 'text',
-                'text'              => [
-                    'body' => "🔐 Tu código de verificación de *Subastalo* es:\n\n*$code*\n\nVálido por 10 minutos. No lo compartas con nadie."
-                ],
-            ];
+    private function sendWhatsApp(string $phone, string $code, string $apiKey, string $phoneId): bool
+        {
+            try {
+                // Estructura adaptada para enviar variables dinámicas en la plantilla de Meta
+                $payload = [
+                    'messaging_product' => 'whatsapp',
+                    'to'                => $phone,
+                    'type'              => 'template',
+                    'template'          => [
+                        'name'     => 'hello_world', // Nombre de tu plantilla aprobada
+                        'language' => [
+                            'code' => 'en_US'
+                        ],
+                        'components' => [
+                            [
+                                'type'       => 'body',
+                                'parameters' => [
+                                    [
+                                        'type' => 'text',
+                                        'text' => $code // Aquí se inyecta dinámicamente tu OTP
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ],
+                ];
 
-            $ch = curl_init("https://graph.facebook.com/v19.0/{$phoneId}/messages");
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'Authorization: Bearer ' . $apiKey,
-                'Content-Type: application/json',
-            ]);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+                $ch = curl_init("https://graph.facebook.com/v25.0/{$phoneId}/messages");
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                    'Authorization: Bearer ' . $apiKey,
+                    'Content-Type: application/json',
+                ]);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
 
-            $responseRaw = curl_exec($ch);
-            
-            // Si hay error en la petición cURL, lo registramos para analizarlo
-            if (curl_errno($ch)) {
-                log_message('error', 'cURL Error: ' . curl_error($ch));
+                $responseRaw = curl_exec($ch);
+                
+                if (curl_errno($ch)) {
+                    log_message('error', 'cURL Error: ' . curl_error($ch));
+                    curl_close($ch);
+                    return false;
+                }
+                
                 curl_close($ch);
+                $response = json_decode($responseRaw, true);
+
+                return isset($response['messages'][0]['id']);
+                
+            } catch (\Exception $e) {
+                log_message('error', 'OTP WhatsApp error general: ' . $e->getMessage());
                 return false;
             }
-            
-            curl_close($ch);
-
-            $response = json_decode($responseRaw, true);
-
-            // Si Meta devuelve un error, lo registramos
-            if (isset($response['error'])) {
-                log_message('error', 'Meta API Error: ' . json_encode($response['error']));
-                return false;
-            }
-
-            return isset($response['messages'][0]['id']);
-            
-        } catch (\Exception $e) {
-            log_message('error', 'OTP WhatsApp error general: ' . $e->getMessage());
-            return false;
         }
-    }
 
     private function generateJWT(string $userId): string
     {
