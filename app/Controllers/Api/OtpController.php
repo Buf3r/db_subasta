@@ -20,29 +20,31 @@ class OtpController extends ResourceController
         }
 
         // 1. Limpiamos el teléfono de caracteres no numéricos
-        $cleanPhone = preg_replace('/\D/', '', $phone);
+        $cleanPhoneClean = preg_replace('/\D/', '', $phone);
 
-        // 2. Intentamos buscar el número en la BD en el formato exacto en el que el usuario lo envía (ej. 0424...)
+        // 2. Buscamos el usuario en la base de datos
         $userDb = new UserModel;
         $user = $userDb->groupStart()
-            ->where('phone', $cleanPhone)
-            ->orWhere('phone', '0' . $cleanPhone) // Por si acaso tiene el cero adelante
-            ->orWhere('phone', ltrim($cleanPhone, '0')) // Por si acaso le falta el cero
+            ->where('phone', $PhoneClean)
+            ->orWhere('phone', '0' . $PhoneClean)
+            ->orWhere('phone', ltrim($PhoneClean, '0'))
             ->groupEnd()
             ->first();
 
-        // 3. Si no existe, devolvemos el error
         if (!$user) {
             return $this->fail('No existe una cuenta con ese número de teléfono.', 404);
         }
 
-        // Normalizar teléfono para enviarlo por WhatsApp
-        $normalizedPhone = $this->normalizePhone($cleanPhone);
+        // 3. Generamos el código dentro de un try-catch para capturar excepciones
+        try {
+            $otpDb = new OtpModel;
+            $code = $otpDb->generateCode($this->normalizePhone($PhoneClean));
+        } catch (\Throwable $e) {
+            return $this->failServerError('Error generando código: ' . $e->getMessage());
+        }
 
-        $otpDb = new OtpModel;
-        $code = $otpDb->generateCode($normalizedPhone);
-
-        // Debug temporal — ver qué pasa con WhatsApp
+        // 4. Enviamos el mensaje de WhatsApp
+        $normalizedPhone = $this->normalizePhone($PhoneClean);
         $sent = $this->sendWhatsApp($normalizedPhone, $code);
 
         if (!$sent) {
@@ -86,7 +88,6 @@ class OtpController extends ResourceController
             return $this->fail('Código inválido o expirado.', 401);
         }
 
-        // Obtener el usuario y generar JWT igual que en login
         $userDb = new UserModel;
         $user = $userDb->where('phone', $phone)->first();
 
@@ -94,7 +95,6 @@ class OtpController extends ResourceController
             return $this->failNotFound('Usuario no encontrado.');
         }
 
-        // Generar JWT usando el mismo helper del AuthController
         $token = $this->generateJWT($user['user_id']);
 
         return $this->respond([
