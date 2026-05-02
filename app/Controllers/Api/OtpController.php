@@ -11,7 +11,7 @@ class OtpController extends ResourceController
 {
     use ResponseTrait;
 
-    public function send()
+   public function send()
     {
         $phone = $this->request->getVar('phone');
 
@@ -35,7 +35,7 @@ class OtpController extends ResourceController
             return $this->fail('No existe una cuenta con ese número de teléfono.', 404);
         }
 
-        // 3. Generamos el código usando try-catch
+        // 3. Generamos el código
         try {
             $otpDb = new OtpModel;
             $code = $otpDb->generateCode($this->normalizePhone($cleanPhone));
@@ -43,9 +43,17 @@ class OtpController extends ResourceController
             return $this->failServerError('Error generando código: ' . $e->getMessage());
         }
 
-        // 4. Enviamos por WhatsApp
+        // 4. Asegurarnos de que las variables de entorno existen antes de usarlas
+        $zernioApiKey = env('ZERNIO_API_KEY');
+        $zernioPhoneId = env('ZERNIO_PHONE_ID');
+
+        if (empty($zernioApiKey) || empty($zernioPhoneId)) {
+            return $this->failServerError('Faltan variables de configuración de WhatsApp en el servidor (ENV)');
+        }
+
+        // 5. Enviamos por WhatsApp
         $normalizedPhone = $this->normalizePhone($cleanPhone);
-        $sent = $this->sendWhatsApp($normalizedPhone, $code);
+        $sent = $this->sendWhatsApp($normalizedPhone, $code, $zernioApiKey, $zernioPhoneId);
 
         if (!$sent) {
             return $this->failServerError('No se pudo enviar el código. Intenta de nuevo.');
@@ -105,12 +113,9 @@ class OtpController extends ResourceController
         ]);
     }
 
-    private function sendWhatsApp(string $phone, string $code): bool
+   private function sendWhatsApp(string $phone, string $code, string $apiKey, string $phoneId): bool
     {
         try {
-            $zernioApiKey = env('ZERNIO_API_KEY');
-            $zernioPhoneId = env('ZERNIO_PHONE_ID');
-
             $payload = [
                 'messaging_product' => 'whatsapp',
                 'to'                => $phone,
@@ -120,31 +125,34 @@ class OtpController extends ResourceController
                 ],
             ];
 
-            $ch = curl_init("https://graph.facebook.com/v19.0/{$zernioPhoneId}/messages");
+            $ch = curl_init("https://graph.facebook.com/v19.0/{$phoneId}/messages");
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'Authorization: Bearer ' . $zernioApiKey,
+                'Authorization: Bearer ' . $apiKey,
                 'Content-Type: application/json',
             ]);
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
 
             $responseRaw = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURL_INFO_HTTP_CODE); // Capturamos el código HTTP de respuesta
             
-            // Opcional: registrar el error de cURL si existe
+            // Si hay error en la petición cURL, lo registramos para analizarlo
             if (curl_errno($ch)) {
                 log_message('error', 'cURL Error: ' . curl_error($ch));
+                curl_close($ch);
+                return false;
             }
             
             curl_close($ch);
 
             $response = json_decode($responseRaw, true);
 
-            // Registro (log) en CodeIgniter para ver exactamente qué devolvió Facebook en la consola
-            log_message('error', 'WhatsApp API Response (' . $httpCode . '): ' . $responseRaw);
+            // Si Meta devuelve un error, lo registramos
+            if (isset($response['error'])) {
+                log_message('error', 'Meta API Error: ' . json_encode($response['error']));
+                return false;
+            }
 
-            // Verificamos si existe el ID del mensaje
             return isset($response['messages'][0]['id']);
             
         } catch (\Exception $e) {
