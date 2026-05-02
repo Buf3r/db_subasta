@@ -72,36 +72,61 @@ class OtpController extends ResourceController
         return $phone;
     }
 
-    public function verifyCode(string $phone, string $code): bool
-        {
-            // 1. Limpiamos cualquier carácter no numérico
-            $cleanPhone = preg_replace('/\D/', '', $phone);
-            
-            // Extraemos los últimos 10 dígitos (el número nacional estándar sin prefijo de país)
-            // Por ejemplo, de 584122944927 o 04122944927 toma 4122944927
-            $nationalNumber = substr($cleanPhone, -10);
+    public function verify()
+    {
+        $phone = $this->request->getVar('phone');
+        $code  = $this->request->getVar('code');
 
-            // 2. Buscamos el código en la base de datos comparando los últimos 10 dígitos
-            $otp = $this->where('used', 0)
-                        ->where('code', $code)
-                        ->where('expires_at >=', date('Y-m-d H:i:s'))
-                        ->orderBy('created_at', 'DESC')
-                        ->findAll(); // Traemos varios posibles si los hay para iterar
-
-            foreach ($otp as $row) {
-                // Limpiamos el teléfono de la base de datos para comparar sus últimos 10 dígitos
-                $dbPhone = preg_replace('/\D/', '', $row['phone']);
-                $dbNationalNumber = substr($dbPhone, -10);
-
-                if ($dbNationalNumber === $nationalNumber) {
-                    // Marcamos como usado y retornamos éxito
-                    $this->update($row['id'], ['used' => 1]);
-                    return true;
-                }
-            }
-
-            return false;
+        if (!$phone || !$code) {
+            return $this->fail('Teléfono y código son requeridos', 400);
         }
+
+        // 1. Limpiamos el teléfono
+        $cleanPhone = preg_replace('/\D/', '', $phone);
+
+        $otpDb = new OtpModel;
+        
+        // 2. Buscamos el código verificando diferentes formatos
+        $valid = $otpDb->verifyCode($cleanPhone, $code);
+
+        if (!$valid) {
+            $altPhone = ltrim($cleanPhone, '0');
+            $valid = $otpDb->verifyCode($altPhone, $code);
+        }
+
+        // Si no es válido, devolvemos el error exacto con el mensaje visible en la app
+        if (!$valid) {
+            return $this->failUnauthorized('Código inválido o expirado.');
+        }
+
+        $userDb = new UserModel;
+        // Buscamos al usuario en la BD para generar el token
+        $user = $userDb->groupStart()
+            ->where('phone', $cleanPhone)
+            ->orWhere('phone', '0' . $cleanPhone)
+            ->orWhere('phone', ltrim($cleanPhone, '0'))
+            ->groupEnd()
+            ->first();
+
+        if (!$user) {
+            return $this->failNotFound('Usuario no encontrado.');
+        }
+
+        // Generamos el token de autenticación
+        $token = $this->generateJWT($user['user_id']);
+
+        return $this->respond([
+            'status'   => 200,
+            'messages' => ['success' => 'OK'],
+            'data'     => [
+                'token' => $token,
+                'user'  => [
+                    'user_id' => $user['user_id'],
+                    'phone'   => $user['phone']
+                ]
+            ],
+        ]);
+    }
 
     private function sendWhatsApp(string $phone, string $code, string $apiKey, string $phoneId): bool
     {
