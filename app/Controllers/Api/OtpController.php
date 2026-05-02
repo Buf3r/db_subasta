@@ -58,12 +58,12 @@ class OtpController extends ResourceController
         
         // Si empieza con 0 → reemplaza por 58
         if (str_starts_with($phone, '0')) {
-            return '58' . substr($phone, 1);
+            return '+58' . substr($phone, 1);
         }
         
         // Si no empieza con 58 → agrega 58
         if (!str_starts_with($phone, '58')) {
-            return '58' . $phone;
+            return '+58' . $phone;
         }
         
         return $phone;
