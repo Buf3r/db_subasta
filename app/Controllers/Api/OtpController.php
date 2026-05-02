@@ -73,35 +73,35 @@ class OtpController extends ResourceController
     }
 
     public function verifyCode(string $phone, string $code): bool
-    {
-        // 1. Limpiamos cualquier carácter no numérico
-        $cleanPhone = preg_replace('/\D/', '', $phone);
-        
-        // Extraemos los últimos 10 dígitos (el número nacional estándar sin prefijo de país)
-        // Por ejemplo, de 584122944927 o 04122944927 toma 4122944927
-        $nationalNumber = substr($cleanPhone, -10);
+        {
+            // 1. Limpiamos cualquier carácter no numérico
+            $cleanPhone = preg_replace('/\D/', '', $phone);
+            
+            // Extraemos los últimos 10 dígitos (el número nacional estándar sin prefijo de país)
+            // Por ejemplo, de 584122944927 o 04122944927 toma 4122944927
+            $nationalNumber = substr($cleanPhone, -10);
 
-        // 2. Buscamos el código en la base de datos comparando los últimos 10 dígitos
-        $otp = $this->where('used', 0)
-                    ->where('code', $code)
-                    ->where('expires_at >=', date('Y-m-d H:i:s'))
-                    ->orderBy('created_at', 'DESC')
-                    ->findAll(); // Traemos varios posibles si los hay para iterar
+            // 2. Buscamos el código en la base de datos comparando los últimos 10 dígitos
+            $otp = $this->where('used', 0)
+                        ->where('code', $code)
+                        ->where('expires_at >=', date('Y-m-d H:i:s'))
+                        ->orderBy('created_at', 'DESC')
+                        ->findAll(); // Traemos varios posibles si los hay para iterar
 
-        foreach ($otp as $row) {
-            // Limpiamos el teléfono de la base de datos para comparar sus últimos 10 dígitos
-            $dbPhone = preg_replace('/\D/', '', $row['phone']);
-            $dbNationalNumber = substr($dbPhone, -10);
+            foreach ($otp as $row) {
+                // Limpiamos el teléfono de la base de datos para comparar sus últimos 10 dígitos
+                $dbPhone = preg_replace('/\D/', '', $row['phone']);
+                $dbNationalNumber = substr($dbPhone, -10);
 
-            if ($dbNationalNumber === $nationalNumber) {
-                // Marcamos como usado y retornamos éxito
-                $this->update($row['id'], ['used' => 1]);
-                return true;
+                if ($dbNationalNumber === $nationalNumber) {
+                    // Marcamos como usado y retornamos éxito
+                    $this->update($row['id'], ['used' => 1]);
+                    return true;
+                }
             }
-        }
 
-        return false;
-    }
+            return false;
+        }
 
     private function sendWhatsApp(string $phone, string $code, string $apiKey, string $phoneId): bool
     {
