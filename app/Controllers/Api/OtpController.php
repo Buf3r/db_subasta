@@ -19,19 +19,27 @@ class OtpController extends ResourceController
             return $this->fail('El teléfono es requerido', 400);
         }
 
-        // Verificar que el teléfono existe en la BD
+        // Normalizar el número para buscar en BD
+        $normalizedPhone = $this->normalizePhone($phone);
+
+        // Buscar con cualquier formato posible
         $userDb = new UserModel;
-        $user = $userDb->where('phone', $phone)->first();
+        $user = $userDb->groupStart()
+            ->where('phone', $normalizedPhone)
+            ->orWhere('phone', '0' . substr($normalizedPhone, 2)) // 584242... → 04242...
+            ->orWhere('phone', substr($normalizedPhone, 2))       // 584242... → 4242...
+            ->groupEnd()
+            ->first();
 
         if (!$user) {
             return $this->fail('No existe una cuenta con ese número de teléfono.', 404);
         }
 
         $otpDb = new OtpModel;
-        $code = $otpDb->generateCode($phone);
+        $code = $otpDb->generateCode($normalizedPhone);
 
-        // Enviar por WhatsApp via Zernio
-        $sent = $this->sendWhatsApp($phone, $code);
+        // Debug temporal — ver qué pasa con WhatsApp
+        $sent = $this->sendWhatsApp($normalizedPhone, $code);
 
         if (!$sent) {
             return $this->failServerError('No se pudo enviar el código. Intenta de nuevo.');
@@ -41,6 +49,24 @@ class OtpController extends ResourceController
             'status'   => 200,
             'messages' => ['success' => 'Código enviado por WhatsApp'],
         ]);
+    }
+
+    private function normalizePhone(string $phone): string
+    {
+        // Elimina todo excepto dígitos
+        $phone = preg_replace('/\D/', '', $phone);
+        
+        // Si empieza con 0 → reemplaza por 58
+        if (str_starts_with($phone, '0')) {
+            return '58' . substr($phone, 1);
+        }
+        
+        // Si no empieza con 58 → agrega 58
+        if (!str_starts_with($phone, '58')) {
+            return '58' . $phone;
+        }
+        
+        return $phone;
     }
 
     public function verify()
@@ -112,16 +138,6 @@ class OtpController extends ResourceController
             log_message('error', 'OTP WhatsApp error: ' . $e->getMessage());
             return false;
         }
-    }
-
-    private function formatVenezuelanPhone(string $phone): string
-    {
-        // 04121234567 → 584121234567
-        $phone = preg_replace('/\D/', '', $phone);
-        if (str_starts_with($phone, '0')) {
-            $phone = '58' . substr($phone, 1);
-        }
-        return $phone;
     }
 
     private function generateJWT(string $userId): string
