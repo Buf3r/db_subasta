@@ -150,11 +150,12 @@ class Auction extends ResourceController
 
         // 2. Intentar la inserción de la subasta
         $db = new AuctionModel;
-        $save = $db->insert([
-            'item_id'        => $this->request->getVar('item_id'),
-            'user_id'        => $this->userId,
-            'status'         => 'open',
-            'date_completed' => $this->request->getVar('date_completed'),
+        $save = $db->insert($insert = [
+            'item_id'          => $this->request->getVar('item_id'),
+            'user_id'          => $this->userId,
+            'status'           => 'open',
+            'date_completed'   => $this->request->getVar('date_completed'),
+            'delivery_method'  => $this->request->getVar('delivery_method') ?? 'personal',
         ]);
 
         if (!$save) {
