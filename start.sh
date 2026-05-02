@@ -10,6 +10,10 @@ echo "ADMIN_KEY = ${ADMIN_KEY}" >> /var/www/html/.env
 echo "ZERNIO_API_KEY = ${ZERNIO_API_KEY}" >> /var/www/html/.env
 echo "ZERNIO_PHONE_ID = ${ZERNIO_PHONE_ID}" >> /var/www/html/.env
 
+# ✅ UltraMsg para envío de OTP por WhatsApp
+echo "ULTRAMSG_INSTANCE = ${ULTRAMSG_INSTANCE}" >> /var/www/html/.env
+echo "ULTRAMSG_API_KEY = ${ULTRAMSG_API_KEY}" >> /var/www/html/.env
+
 # Correr migraciones si se pasa el argumento
 if [ "$1" = "migrate" ]; then
     php spark migrate --all
