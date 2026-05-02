@@ -13,51 +13,57 @@ class OtpController extends ResourceController
     use ResponseTrait;
 
     public function send()
-        {
-            $phone = $this->request->getVar('phone');
+    {
+        $phone = $this->request->getVar('phone');
+        if (!$phone) return $this->fail('El teléfono es requerido', 400);
 
-            if (!$phone) {
-                return $this->fail('El teléfono es requerido', 400);
-            }
+        $cleanPhone = preg_replace('/\D/', '', $phone);
 
-            // 1. Limpiamos el teléfono de caracteres no numéricos
-            $cleanPhone = preg_replace('/\D/', '', $phone);
+        // ✅ Verificar límites ANTES de cualquier cosa
+        $attemptsDb = new \App\Models\OtpAttemptsModel();
+        $normalizedPhone = $this->normalizePhone($cleanPhone);
+        $check = $attemptsDb->checkCanRequest($normalizedPhone);
 
-            // 2. Buscamos el usuario en la base de datos
-            $userDb = new UserModel;
-            $user = $userDb->groupStart()
-                ->where('phone', $cleanPhone)
-                ->orWhere('phone', '0' . $cleanPhone)
-                ->orWhere('phone', ltrim($cleanPhone, '0'))
-                ->groupEnd()
-                ->first();
-
-            if (!$user) {
-                return $this->fail('No existe una cuenta con ese número de teléfono.', 404);
-            }
-
-            // 3. Generamos el código
-            try {
-                $otpDb = new OtpModel;
-                $code = $otpDb->generateCode($this->normalizePhone($cleanPhone));
-            } catch (\Throwable $e) {
-                return $this->failServerError('Error generando código: ' . $e->getMessage());
-            }
-
-            // 4. RESPUESTA EXITOSA PARA FLUTTER Y POSTMAN
-            // Se devuelve el estado 200 para que la app no muestre el error inesperado
+        if ($check !== null) {
             return $this->respond([
-                'status'   => 200,
-                'messages' => ['success' => 'Código generado exitosamente'],
-                'data'     => [
-                    'phone'      => $cleanPhone,
-                    // Puedes comentar o descomentar esta línea dependiendo si quieres ver el código en desarrollo
-                    'code'       => $code
+                'status'  => 429,
+                'messages' => ['error' => $check['message']],
+                'data'    => [
+                    'error_code'  => $check['error'],
+                    'retry_after' => $check['retry_after']
                 ]
-            ]);
+            ], 429);
         }
 
-    private function normalizePhone(string $phone): string
+        // Verificar que existe el usuario
+        $userDb = new UserModel;
+        $user = $userDb->groupStart()
+            ->where('phone', $cleanPhone)
+            ->orWhere('phone', '0' . $cleanPhone)
+            ->orWhere('phone', ltrim($cleanPhone, '0'))
+            ->groupEnd()
+            ->first();
+
+        if (!$user) return $this->fail('No existe una cuenta con ese número.', 404);
+
+        // Generar código
+        $otpDb = new OtpModel;
+        $code = $otpDb->generateCode($normalizedPhone);
+
+        // ✅ Registrar el envío DESPUÉS de generarlo
+        $attemptsDb->registerSend($normalizedPhone);
+
+        return $this->respond([
+            'status'   => 200,
+            'messages' => ['success' => 'Código generado exitosamente'],
+            'data'     => ['phone' => $cleanPhone, 'code' => $code]
+        ]);
+    }
+
+    
+    
+    
+        private function normalizePhone(string $phone): string
     {
         // Elimina todo excepto dígitos
         $phone = preg_replace('/\D/', '', $phone);
@@ -117,6 +123,11 @@ class OtpController extends ResourceController
 
         // Generamos el token de autenticación
         $token = $this->generateJWT($user['user_id']);
+
+        // En verify() — al final, si es exitoso, limpiar el registro:
+        // Justo antes del return final en verify():
+        $attemptsDb = new \App\Models\OtpAttemptsModel();
+        $attemptsDb->clearRecord($this->normalizePhone($cleanPhone));
 
         return $this->respond([
             'status'   => 200,
