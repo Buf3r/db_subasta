@@ -20,14 +20,14 @@ class OtpController extends ResourceController
         }
 
         // 1. Limpiamos el teléfono de caracteres no numéricos
-        $cleanPhoneClean = preg_replace('/\D/', '', $phone);
+        $cleanPhone = preg_replace('/\D/', '', $phone);
 
-        // 2. Buscamos el usuario en la base de datos
+        // 2. Buscamos el usuario en la base de datos usando la variable correcta
         $userDb = new UserModel;
         $user = $userDb->groupStart()
-            ->where('phone', $PhoneClean)
-            ->orWhere('phone', '0' . $PhoneClean)
-            ->orWhere('phone', ltrim($PhoneClean, '0'))
+            ->where('phone', $cleanPhone)
+            ->orWhere('phone', '0' . $cleanPhone)
+            ->orWhere('phone', ltrim($cleanPhone, '0'))
             ->groupEnd()
             ->first();
 
@@ -35,16 +35,16 @@ class OtpController extends ResourceController
             return $this->fail('No existe una cuenta con ese número de teléfono.', 404);
         }
 
-        // 3. Generamos el código dentro de un try-catch para capturar excepciones
+        // 3. Generamos el código dentro de un try-catch para capturar cualquier excepción
         try {
             $otpDb = new OtpModel;
-            $code = $otpDb->generateCode($this->normalizePhone($PhoneClean));
+            $code = $otpDb->generateCode($this->normalizePhone($cleanPhone));
         } catch (\Throwable $e) {
             return $this->failServerError('Error generando código: ' . $e->getMessage());
         }
 
         // 4. Enviamos el mensaje de WhatsApp
-        $normalizedPhone = $this->normalizePhone($PhoneClean);
+        $normalizedPhone = $this->normalizePhone($cleanPhone);
         $sent = $this->sendWhatsApp($normalizedPhone, $code);
 
         if (!$sent) {
