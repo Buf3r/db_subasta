@@ -81,20 +81,27 @@ class OtpController extends ResourceController
             return $this->fail('Teléfono y código son requeridos', 400);
         }
 
-        // Normalizamos el teléfono para asegurarnos de que coincide con el de la BD
+        // 1. Limpiamos el teléfono
         $cleanPhone = preg_replace('/\D/', '', $phone);
 
         $otpDb = new OtpModel;
         
-        // Verificamos el código
+        // 2. Buscamos el código verificando diferentes formatos del número en la BD
+        // Probamos con el teléfono tal cual viene, y luego quitando el 0 inicial si lo tiene.
         $valid = $otpDb->verifyCode($cleanPhone, $code);
 
         if (!$valid) {
-            // Respondemos con un estado 401 estructurado y legible para Flutter
+            // Probamos la validación alternativa por si acaso está guardado sin el 0
+            $altPhone = ltrim($cleanPhone, '0');
+            $valid = $otpDb->verifyCode($altPhone, $code);
+        }
+
+        if (!$valid) {
             return $this->failUnauthorized('Código inválido o expirado.');
         }
 
         $userDb = new UserModel;
+        // Buscamos al usuario en la BD para generar el token
         $user = $userDb->groupStart()
             ->where('phone', $cleanPhone)
             ->orWhere('phone', '0' . $cleanPhone)
@@ -106,10 +113,8 @@ class OtpController extends ResourceController
             return $this->failNotFound('Usuario no encontrado.');
         }
 
-        // Generamos el token de autenticación
         $token = $this->generateJWT($user['user_id']);
 
-        // RESPUESTA EXITOSA ESPERADA POR FLUTTER
         return $this->respond([
             'status'   => 200,
             'messages' => ['success' => 'OK'],
