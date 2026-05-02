@@ -47,16 +47,21 @@ class OtpController extends ResourceController
         if (!$user) return $this->fail('No existe una cuenta con ese número.', 404);
 
         // Generar código
+        // Generar código
         $otpDb = new OtpModel;
         $code = $otpDb->generateCode($normalizedPhone);
 
         // ✅ Registrar el envío DESPUÉS de generarlo
         $attemptsDb->registerSend($normalizedPhone);
 
+        // ✅ Enviar OTP por WhatsApp
+        $notifier = new \App\Libraries\WhatsAppNotifier();
+        $notifier->sendOtp($normalizedPhone, $code);
+
         return $this->respond([
             'status'   => 200,
             'messages' => ['success' => 'Código generado exitosamente'],
-            'data'     => ['phone' => $cleanPhone, 'code' => $code]
+            'data'     => ['phone' => $cleanPhone] // ← quita 'code' en producción
         ]);
     }
 
