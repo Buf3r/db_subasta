@@ -6,6 +6,7 @@ use App\Models\OtpModel;
 use App\Models\UserModel;
 use CodeIgniter\RESTful\ResourceController;
 use CodeIgniter\API\ResponseTrait;
+use App\Libraries\JWTCI4;
 
 class OtpController extends ResourceController
 {
@@ -181,20 +182,19 @@ class OtpController extends ResourceController
         }
     }
 
+    // Reemplaza el método generateJWT completo
     private function generateJWT(string $userId): string
     {
-        $key    = env('JWT_SECRET_KEY');
-        $ttl    = (int) env('JWT_TTL', 3600);
-        $now    = time();
+        $userDb = new UserModel;
+        $user = $userDb->find($userId);
 
-        $header  = base64_encode(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
-        $payload = base64_encode(json_encode([
-            'sub' => $userId,
-            'iat' => $now,
-            'exp' => $now + $ttl,
-        ]));
-
-        $signature = base64_encode(hash_hmac('sha256', "$header.$payload", $key, true));
-        return "$header.$payload.$signature";
+        $jwt = new JWTCI4();
+        return $jwt->token(
+            $user['user_id'],
+            $user['username'] ?? '',
+            $user['name']     ?? '',
+            $user['email']    ?? '',
+            $user['phone']    ?? '',
+        );
     }
 }
