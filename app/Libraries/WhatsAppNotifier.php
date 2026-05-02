@@ -25,6 +25,9 @@ class WhatsAppNotifier
         $response = json_decode(curl_exec($ch), true);
         curl_close($ch);
 
+        log_message('info', 'UltraMsg response: ' . json_encode($response));
+        log_message('info', 'Sending to phone: ' . $phone . ' code: ' . $code);
+
         return ($response['sent'] ?? '') === 'true';
     }
 }
